@@ -305,9 +305,9 @@
         };
 
         const dynamicLinkDict = {
-            "https://kjgx668.blogspot.com": { zh: "科技共享", en: "TechShare Blog" },
-            "https://kjgx.168668520.xyz": { zh: "科技共享导航", en: "TechShare Nav" },
-            "https://it-toutiao.blogspot.com": { zh: "IT头条博客", en: "IT Toutiao Blog" }
+            "https://h.zcr7.xx.kg/": { zh: "PA • 导航", en: "TechShare Blog" },
+            "https://txt.zzz07.qzz.io/admin": { zh: "Zb笔记", en: "TechShare Nav" },
+            "https://y.zcr8.ddns-ip.net/Tool2.html#x10": { zh: "TOOLs", en: "IT Toutiao Blog" }
         };
 
         function getLocalizedLinkName(originalName, url) {
@@ -740,7 +740,7 @@
 
         function loadFriendLinks() {
             const container = document.getElementById('friend-links-container'); let linksStr = localStorage.getItem('nav_friend_links'); let links = linksStr ? JSON.parse(linksStr) : []; container.innerHTML = '';
-            if(links.length === 0) { links = [ { name: "IT头条博客", url: "https://it-toutiao.blogspot.com" }, { name: "科技共享导航", url: "https://kjgx.168668520.xyz" } ]; }
+            if(links.length === 0) { links = [ { name: "PA • 导航", url: "https://h.zcr7.xx.kg" }, { name: "Zb笔记", url: "https://txt.zzz07.qzz.io/admin" } ]; }
             links.forEach((item, index) => {
                 const displayName = getLocalizedLinkName(item.name, item.url);
                 container.innerHTML += `
