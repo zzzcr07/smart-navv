@@ -117,7 +117,7 @@
             
             <!-- 【新增】修改管理员密码区域 (仅管理员可见) -->
             <div class="admin-only space-y-1.5 px-1 border-t border-slate-800 pt-3 mt-1">
-                <label class="text-[11px] text-slate-400 font-bold" data-i18n="pwdTitle">修改管理员密码 (全站同步)</label>
+                <label class="text-[11px] text-slate-400 font-bold" data-i18n="pwdTitle">修改管理员密码</label>
                 <div class="flex gap-1.5">
                     <input type="password" id="custom-pwd-input" data-i18n-placeholder="pwdInputPlace" placeholder="输入新密码" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-100 focus:outline-none focus:border-emerald-500">
                     <button onclick="updateAdminPwd()" class="bg-emerald-600 text-white px-2 py-1 rounded-lg text-xs hover:bg-emerald-500 cursor-pointer shrink-0" data-i18n="saveBtn">保存</button>
@@ -175,11 +175,11 @@
                 <h3 class="text-lg font-semibold text-indigo-400 mb-4 flex items-center"><i class="fas fa-star mr-2.5"></i> <span data-i18n="cardRec">常用工具</span></h3>
                 <div class="grid grid-cols-2 gap-3">
                     <a href="https://github.com" target="_blank" rel="noopener noreferrer" class="flex items-center space-x-3 p-3 bg-slate-500/5 rounded-xl hover:bg-indigo-600/20 transition-all"><i class="fab fa-github text-xl text-slate-400"></i> <span class="text-sm font-medium">GitHub</span></a>
-                    <a href="https://www.youtube.com/@kejigongxiang" target="_blank" rel="noopener noreferrer" class="flex items-center space-x-3 p-3 bg-slate-500/5 rounded-xl hover:bg-indigo-600/20 transition-all"><i class="fab fa-youtube text-xl text-red-500"></i> <span class="text-sm font-medium">YouTube</span></a>
-                    <a href="https://kjgx668.blogspot.com" target="_blank" rel="noopener noreferrer" class="flex items-center space-x-3 p-3 bg-slate-500/5 rounded-xl hover:bg-indigo-600/20 transition-all"><i class="fas fa-globe text-xl text-blue-400"></i> <span class="text-sm font-medium" data-i18n="linkBlog">科技共享博客</span></a>
-                    <a href="https://x.com/kejigongxiang" target="_blank" rel="noopener noreferrer" class="flex items-center space-x-3 p-3 bg-slate-500/5 rounded-xl hover:bg-indigo-600/20 transition-all"><i class="fas fa-tv text-xl text-pink-400"></i> <span class="text-sm font-medium" data-i18n="linkBili">哔哩哔哩</span></a>
-                    <a href="https://www.zhihu.com" target="_blank" rel="noopener noreferrer" class="flex items-center space-x-3 p-3 bg-slate-500/5 rounded-xl hover:bg-indigo-600/20 transition-all"><i class="fab fa-zhihu text-xl text-blue-500"></i> <span class="text-sm font-medium" data-i18n="linkZhihu">知乎</span></a>
-                    <a href="https://weibo.com" target="_blank" rel="noopener noreferrer" class="flex items-center space-x-3 p-3 bg-slate-500/5 rounded-xl hover:bg-indigo-600/20 transition-all"><i class="fab fa-weibo text-xl text-red-400"></i> <span class="text-sm font-medium" data-i18n="linkWeibo">微博</span></a>
+                    <a href="https://translate.google.com/?hl=zh-cn&sl=auto&tl=zh-CN&text=" target="_blank" rel="noopener noreferrer" class="flex items-center space-x-3 p-3 bg-slate-500/5 rounded-xl hover:bg-indigo-600/20 transition-all"><i class="fab fa-youtube text-xl text-red-500"></i> <span class="text-sm font-medium">翻译</span></a>
+                    <a href="https://https://www.youtube.com/results?search_query=" target="_blank" rel="noopener noreferrer" class="flex items-center space-x-3 p-3 bg-slate-500/5 rounded-xl hover:bg-indigo-600/20 transition-all"><i class="fas fa-globe text-xl text-blue-400"></i> <span class="text-sm font-medium" data-i18n="linkBlog"油管</span></a>
+                    <a href="https://z-library.sk/s/" target="_blank" rel="noopener noreferrer" class="flex items-center space-x-3 p-3 bg-slate-500/5 rounded-xl hover:bg-indigo-600/20 transition-all"><i class="fas fa-tv text-xl text-pink-400"></i> <span class="text-sm font-medium" data-i18n="linkBili">电子书</span></a>
+                    <a href="https://yiso.fun/info?searchKey=" target="_blank" rel="noopener noreferrer" class="flex items-center space-x-3 p-3 bg-slate-500/5 rounded-xl hover:bg-indigo-600/20 transition-all"><i class="fab fa-zhihu text-xl text-blue-500"></i> <span class="text-sm font-medium" data-i18n="linkZhihu">易 搜</span></a>
+                    <a href="https://zh.wikipedia.org/wiki/" target="_blank" rel="noopener noreferrer" class="flex items-center space-x-3 p-3 bg-slate-500/5 rounded-xl hover:bg-indigo-600/20 transition-all"><i class="fab fa-weibo text-xl text-red-400"></i> <span class="text-sm font-medium" data-i18n="linkWeibo">wiki</span></a>
                 </div>
             </div>
 
@@ -219,7 +219,7 @@
         <div class="w-full relative z-10 mb-12">
             <div class="glass-card rounded-2xl p-6 shadow-xl hover:border-emerald-500/20 transition-all duration-300">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-base font-semibold text-emerald-400 flex items-center"><i class="fas fa-handshake mr-2.5"></i> <span data-i18n="cardFriend">链接</span></h3>
+                    <h3 class="text-base font-semibold text-emerald-400 flex items-center"><i class="fas fa-handshake mr-2.5"></i> <span data-i18n="cardFriend">重要链接</span></h3>
                     <button type="button" onclick="openLinkModal('friend')" class="admin-only text-xs px-2.5 py-1 bg-emerald-600/20 text-emerald-400 border border-emerald-500/20 rounded-lg hover:bg-emerald-600/40 transition-colors cursor-pointer z-[50]" data-i18n="addLocal">添加 (本地)</button>
                 </div>
                 <div id="friend-links-container" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3"></div>
@@ -227,7 +227,7 @@
         </div>
 
         <footer id="admin-trigger" ondblclick="triggerAdminLogin()" class="text-slate-500 text-xs mt-4 cursor-pointer select-none tracking-wide hover:text-indigo-400/70 transition-colors" title="后台入口 (双击 / Double Click)">
-            <span data-i18n="footerText">&copy; 2026 KK • 导航 · Powered by Cloudflare</span> <span id="admin-badge" class="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-400 font-bold hidden" data-i18n="adminBadge">已登入</span>
+            <span data-i18n="footerText">&copy; KK • 导航 · Powered by Cloudflare</span> <span id="admin-badge" class="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-400 font-bold hidden" data-i18n="adminBadge">已登入</span>
         </footer>
     </div>
 
@@ -279,7 +279,7 @@
                 footerText: "&copy; 2026 KK • 导航 · Powered by Cloudflare", adminBadge: "已登入",
                 modalAddCloud: "添加云端站长推荐", modalAddFriend: "添加友情链接", siteName: "网站名称", siteNamePlace: "例如：百度", siteUrl: "网站网址 (URL)",
                 btnCancel: "取消", btnSave: "保存站点", noCloudLinks: "暂无自定义链接", loadingCloud: "正在从云端加载...",
-                delConfirm: "确定要删除这个链接吗？", pwdPrompt: "🔐 请输入后台管理员安全密码：", pwdSuccess: "🎉 认证成功！管理功能已全部解锁。", pwdFail: "❌ 密码错误，鉴权失败！", logoutMsg: "🔒 已安全退出管理后台，页面回归只读状态。",
+                delConfirm: "确定要删除这个链接吗？", pwdPrompt: "🔐 请输入后台管理员安全密码：", pwdSuccess: "🎉 成功解锁", pwdFail: "❌ 密码错误", logoutMsg: "🔒 已安全退出管理后台，页面回归只读状态。",
                 weatherCloudy: "多云", weatherClear: "晴朗", weatherRain: "阵雨", weatherSnow: "降雪", weatherThunder: "雷阵雨", weatherDefault: "风调雨顺 · 晴", validUrlMsg: "提示：请输入有效的网址！",
                 addSectionBtn: "添加自定义区域", promptSectionName: "请输入新区域的名称 (例如：AI工具)：", delSectionConfirm: "确定要删除整个区域及其所有链接吗？", modalAddSection: "添加到自定义区域",
                 renameSectionPrompt: "请输入新的区域名称：",
@@ -338,8 +338,8 @@
             const pwd = prompt(t('pwdPrompt'));
             if (pwd === null) return;
             
-            // 【关键】：校验密码时优先使用云端配置，如果没有则使用初始密码 admin888
-            const currentValidPwd = cloudConfig.adminPwd || "admin888";
+            // 【关键】：校验密码时优先使用云端配置，如果没有则使用初始密码 zbb
+            const currentValidPwd = cloudConfig.adminPwd || "zbb";
             
             if (pwd === currentValidPwd) { 
                 localStorage.setItem('nav_admin_auth', 'true'); alert(t('pwdSuccess')); checkAdminSession(); 
