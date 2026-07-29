@@ -146,7 +146,7 @@
 
         <!-- 搜索引擎组件 -->
         <div class="w-full max-w-2xl mb-16 relative z-[100]">
-            <form id="search-form" action="https://www.google.com/search" method="get" target="_blank" rel="noopener noreferrer" class="relative">
+            <form id="search-form" action="https://yiso.fun/info?searchKey=" method="get" target="_blank" rel="noopener noreferrer" class="relative">
                 <div class="flex items-center glass-input rounded-2xl border border-slate-700/40 shadow-2xl focus-within:border-indigo-500/80 transition-all duration-300">
                     <div class="relative pl-4">
                         <button type="button" aria-label="切换搜索引擎" id="engine-btn" onclick="toggleEngineMenu(event)" class="flex items-center space-x-2 text-slate-400 hover:text-indigo-400 transition-colors py-4 pr-2 cursor-pointer">
@@ -154,9 +154,9 @@
                             <i class="fas fa-chevron-down text-xs opacity-50"></i>
                         </button>
                         <div id="engine-menu" class="absolute left-2 top-full mt-2 w-36 bg-slate-950/95 border border-slate-800 rounded-xl shadow-2xl hidden backdrop-blur-md overflow-hidden z-[110]">
-                            <button type="button" onclick="selectEngine('google')" class="w-full text-left px-4 py-2.5 hover:bg-indigo-600/20 text-sm flex items-center space-x-2 cursor-pointer"><i class="fab fa-google text-blue-400"></i> <span data-i18n="enGoogle">谷歌 Google</span></button>
-                            <button type="button" onclick="selectEngine('bing')" class="w-full text-left px-4 py-2.5 hover:bg-indigo-600/20 text-sm flex items-center space-x-2 cursor-pointer"><i class="fab fa-microsoft text-teal-400"></i> <span data-i18n="enBing">必应 Bing</span></button>
-                            <button type="button" onclick="selectEngine('baidu')" class="w-full text-left px-4 py-2.5 hover:bg-indigo-600/20 text-sm flex items-center space-x-2 cursor-pointer"><i class="fas fa-paw text-red-400"></i> <span data-i18n="enBaidu">百度 Baidu</span></button>
+                            <button type="button" onclick="selectEngine('google')" class="w-full text-left px-4 py-2.5 hover:bg-indigo-600/20 text-sm flex items-center space-x-2 cursor-pointer"><i class="fab fa-google text-blue-400"></i> <span data-i18n="enGoogle">易搜</span></button>
+                            <button type="button" onclick="selectEngine('bing')" class="w-full text-left px-4 py-2.5 hover:bg-indigo-600/20 text-sm flex items-center space-x-2 cursor-pointer"><i class="fab fa-microsoft text-teal-400"></i> <span data-i18n="enBing">油管</span></button>
+                            <button type="button" onclick="selectEngine('baidu')" class="w-full text-left px-4 py-2.5 hover:bg-indigo-600/20 text-sm flex items-center space-x-2 cursor-pointer"><i class="fas fa-paw text-red-400"></i> <span data-i18n="enBaidu">WiKi</span></button>
                             <button type="button" onclick="selectEngine('github')" class="w-full text-left px-4 py-2.5 hover:bg-indigo-600/20 text-sm flex items-center space-x-2 cursor-pointer"><i class="fab fa-github text-slate-400"></i> <span>GitHub</span></button>
                         </div>
                     </div>
@@ -219,7 +219,7 @@
                 </div>
                 <div>
                     <label class="text-xs text-slate-400 block mb-1.5 font-medium" data-i18n="siteUrl">网站网址 (URL)</label>
-                    <input type="text" id="site-url" placeholder="www.baidu.com" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition-all">
+                    <input type="text" id="site-url" placeholder="https://zh.wikipedia.org/wiki/" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition-all">
                 </div>
             </div>
             <div class="flex justify-end space-x-3">
@@ -249,7 +249,7 @@
                 pageTitle: "KK • 导航", langTitle: "语言 / Language", themeTitle: "基础色彩模式 (本地偏好)",
                 themeLight: "日间", themeDark: "夜间", bgTitle: "自定义背景 (全站同步)", bgInputPlace: "输入图片网址 https://...",
                 applyBtn: "应用", clearBg: "清除壁纸", logoutBtn: "退出后台管理", weatherLoading: "正在定位测算天气...",
-                enGoogle: "谷歌 Google", enBing: "必应 Bing", enBaidu: "百度 Baidu", searchGoogle: "在 Google 中搜索...", searchBing: "在 必应 Bing 中搜索...", searchBaidu: "在 百度 Baidu 中搜索...", searchGithub: "在 GitHub 中搜索仓库...",
+                enGoogle: "易搜", enBing: "油管", enBaidu: "WiKi", searchGoogle: "在 易搜 中搜索...", searchBing: "在 油管 中搜索...", searchBaidu: "在 WiKi 中搜索...", searchGithub: "在 GitHub 中搜索仓库...",
                 cardRec: "快捷应用", cardDev: "常用工具", cardCustom: "网络工具", cardFriend: "重要链接",
                 linkBlog: "KK博客", linkBili: "Tools", linkZhihu: "Zb笔记", linkWeibo: "Cloudfare", linkJuejin: "github",
                 addCloud: "添加 (云端)", addLocal: "添加 (本地)", expandMore: "展开显示更多", collapseMore: "收起部分站点",
