@@ -104,11 +104,13 @@
             margin-top: 1rem;
         }
 
-        /* Tooltip 样式 - 修复版 */
+        /* ===== 修复 Tooltip 样式 - 关键修复 ===== */
         .link-tooltip-wrapper {
             position: relative;
             display: inline-flex;
             align-items: center;
+            /* 关键：允许提示框溢出容器 */
+            overflow: visible !important;
         }
         .link-tooltip-wrapper .tooltip-text {
             visibility: hidden;
@@ -124,7 +126,8 @@
             line-height: 1.4;
             position: absolute;
             z-index: 200;
-            bottom: calc(100% + 8px);
+            /* 增加间距，避免被遮挡 */
+            bottom: calc(100% + 12px);
             left: 50%;
             transform: translateX(-50%);
             opacity: 0;
@@ -157,7 +160,6 @@
             border-color: #f1f5f9 transparent transparent transparent;
         }
 
-        /* 编辑备注按钮 */
         .edit-desc-btn {
             opacity: 0;
             transition: opacity 0.2s;
@@ -167,6 +169,12 @@
         }
         .group:hover .edit-desc-btn:hover {
             opacity: 1;
+        }
+        /* 确保卡片内的容器不裁剪提示框 */
+        .glass-card,
+        .group,
+        #custom-links-container > div {
+            overflow: visible !important;
         }
     </style>
 </head>
@@ -222,12 +230,12 @@
         <div class="nav-grid-wrapper w-full">
             <div id="main-nav-grid" class="w-full grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6 relative z-10 items-start">
 
-                <div id="card-custom" class="glass-card rounded-2xl p-5 shadow-xl hover:border-pink-500/30 transition-all duration-300 xl:col-span-1">
+                <div id="card-custom" class="glass-card rounded-2xl p-5 shadow-xl hover:border-pink-500/30 transition-all duration-300 xl:col-span-1" style="overflow: visible !important;">
                     <div class="flex justify-between items-center mb-3">
                         <h3 class="text-lg font-semibold text-pink-400 flex items-center"><i class="fas fa-folder-plus mr-2.5"></i> <span data-i18n="cardCustom">快捷应用</span></h3>
                         <button type="button" onclick="openLinkModal('custom')" class="admin-only text-xs px-2.5 py-1 bg-pink-600/20 text-pink-400 border border-pink-500/20 rounded-lg hover:bg-pink-600/40 transition-colors cursor-pointer z-[50]" data-i18n="addCloud">添加 (云端)</button>
                     </div>
-                    <div id="custom-links-container"></div>
+                    <div id="custom-links-container" style="overflow: visible !important;"></div>
                     <div id="expand-action-wrapper" class="mt-3 pt-2 border-t border-slate-500/10 text-center hidden">
                         <button onclick="toggleExpandCustomLinks()" id="expand-btn" class="text-xs font-semibold text-pink-400 hover:text-pink-300 transition-colors cursor-pointer inline-flex items-center gap-1">
                             <span data-i18n="expandMore">展开显示更多</span> <i class="fas fa-chevron-down text-[10px]"></i>
@@ -324,7 +332,7 @@
         let expandedDynamicSections = {}; 
         let currentModalTarget = 'custom'; 
         let currentEngineKey = 'google';
-        let editingLinkRef = null; // 用于编辑备注时定位 { source: 'custom'|'section', secId, index }
+        let editingLinkRef = null;
         
         let cloudConfig = { wallpaper: "", dynamicSections: [], adminPwd: "" };
 
@@ -522,7 +530,6 @@
             updateCloudConfig('wallpaper', "");
         }
 
-        // --- 工具：从URL提取域名作为默认备注 ---
         function extractDomainFromUrl(url) {
             try {
                 const urlObj = new URL(url);
@@ -569,7 +576,6 @@
             renderDynamicSections();
         }
 
-        // --- 编辑备注 ---
         function openEditDescModal(source, secId, index) {
             editingLinkRef = { source, secId, index };
             let currentDesc = '';
@@ -601,7 +607,6 @@
                 if (links[index]) {
                     links[index].desc = newDesc;
                     localStorage.setItem('nav_custom_links', JSON.stringify(links));
-                    // 同步云端
                     fetch('/api/links', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(links) }).catch(() => {});
                     loadCustomLinks();
                 }
@@ -662,26 +667,19 @@
 
                     visibleLinks.forEach((link, idx) => {
                         const displayName = getLocalizedLinkName(link.name, link.url);
-                        // 如果没有 desc，自动从 URL 提取域名作为默认备注
                         let description = link.desc || '';
                         if (!description && link.url) {
                             description = extractDomainFromUrl(link.url);
-                            // 自动补全到数据中
                             link.desc = description;
                         }
                         let displayIcon = `<div class="${iconSizeClass} rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold shrink-0">${displayName.charAt(0).toUpperCase()}</div>`;
                         try { if(link.url) displayIcon = `<img src="https://unavatar.io/duckduckgo/${new URL(link.url).hostname}" draggable="false" onerror="this.style.display='none'" class="${imgSizeClass} rounded object-contain shrink-0" alt="icon" />`; } catch(e){}
 
                         linksHtml += `
-                        <div class="group relative flex items-center justify-between ${pClass} bg-slate-500/5 border border-slate-500/10 rounded-xl hover:bg-indigo-600/10 transition-all"
-                             draggable="true"
-                             ondragstart="handleDragStart(event, 'link', '${sec.id}', ${idx})"
-                             ondragend="handleDragEnd(event)"
-                             ondragover="handleDragOver(event, 'link')"
-                             ondrop="handleDrop(event, 'link', '${sec.id}', ${idx})">
-                            <div class="flex items-center w-full overflow-hidden">
+                        <div class="group relative flex items-center justify-between ${pClass} bg-slate-500/5 border border-slate-500/10 rounded-xl hover:bg-indigo-600/10 transition-all" style="overflow: visible !important;">
+                            <div class="flex items-center w-full overflow-visible">
                                 <i class="fas fa-grip-vertical text-slate-500 opacity-0 group-hover:opacity-50 transition-opacity ${dragMrClass} cursor-move admin-only text-[10px] shrink-0"></i>
-                                <div class="link-tooltip-wrapper flex items-center ${spaceXClass} truncate w-full ${prClass}">
+                                <div class="link-tooltip-wrapper flex items-center ${spaceXClass} truncate w-full ${prClass}" style="overflow: visible !important;">
                                     <a href="${link.url}" draggable="false" target="_blank" rel="noopener noreferrer" class="flex items-center ${spaceXClass} truncate">
                                         ${displayIcon} <span class="${textSizeClass} font-medium truncate">${displayName}</span>
                                     </a>
@@ -722,7 +720,7 @@
                             <button type="button" onclick="deleteCustomSection('${sec.id}')" class="admin-only text-[10px] px-2 py-1 bg-red-600/20 text-red-400 border border-red-500/20 rounded-md hover:bg-red-600/40 transition-colors cursor-pointer z-[50]"><i class="fas fa-trash"></i></button>
                         </div>
                     </div>
-                    <div class="grid ${gridCols}" style="min-height: 40px;" ondragover="handleDragOver(event, 'section')" ondrop="handleDrop(event, 'section', '${sec.id}')">
+                    <div class="grid ${gridCols}" style="min-height: 40px; overflow: visible !important;" ondragover="handleDragOver(event, 'section')" ondrop="handleDrop(event, 'section', '${sec.id}')">
                         ${linksHtml}
                     </div>
                     ${expandHtml}
@@ -833,7 +831,6 @@
             container.innerHTML = `<div class="col-span-full text-center text-xs text-slate-400/60 py-10"><i class="fas fa-spinner fa-spin"></i> ${t('loadingCloud')}</div>`;
             let links = []; try { const res = await fetch('/api/links'); if(res.ok) links = await res.json(); else throw new Error(); } catch(e) { links = JSON.parse(localStorage.getItem('nav_custom_links') || '[]'); }
             
-            // 为没有 desc 的链接自动补全域名
             links = links.map(link => {
                 if (!link.desc && link.url) {
                     link.desc = extractDomainFromUrl(link.url);
@@ -841,7 +838,6 @@
                 return link;
             });
             localStorage.setItem('nav_custom_links', JSON.stringify(links));
-            // 同步云端
             fetch('/api/links', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(links) }).catch(() => {});
             
             container.innerHTML = '';
@@ -871,9 +867,9 @@
                 try { if(item.url) displayIcon = `<img src="https://unavatar.io/duckduckgo/${new URL(item.url).hostname}" draggable="false" onerror="this.style.display='none'" class="${imgSizeClass} rounded object-contain shrink-0" alt="icon" />`; } catch(err){}
                 
                 container.innerHTML += `
-                    <div class="group relative flex items-center justify-between ${pClass} bg-slate-500/5 border border-slate-500/10 rounded-xl hover:bg-indigo-600/10 transition-all">
-                        <div class="flex items-center w-full overflow-hidden">
-                            <div class="link-tooltip-wrapper flex items-center ${spaceXClass} truncate w-full ${prClass}">
+                    <div class="group relative flex items-center justify-between ${pClass} bg-slate-500/5 border border-slate-500/10 rounded-xl hover:bg-indigo-600/10 transition-all" style="overflow: visible !important;">
+                        <div class="flex items-center w-full overflow-visible">
+                            <div class="link-tooltip-wrapper flex items-center ${spaceXClass} truncate w-full ${prClass}" style="overflow: visible !important;">
                                 <a href="${item.url}" draggable="false" target="_blank" rel="noopener noreferrer" class="flex items-center ${spaceXClass} truncate">
                                     ${displayIcon} <span class="${textSizeClass} font-medium truncate">${displayName}</span>
                                 </a>
@@ -889,7 +885,7 @@
 
             if (showExpandBtn) { 
                 actionWrapper.classList.remove('hidden'); const btn = document.getElementById('expand-btn'); 
-                btn.innerHTML = isCustomLinksExpanded ? `<span data-i18n="collapseMore">${t('collapseMore')}</span> <i class="fas fa-chevron-up text-[10px]"></i>` : `<span data-i18n="expandMore">${t('expandMore')}</span> (${links.length - 9}) <i class="fas fa-chevron-down text-[10px]</i>`; 
+                btn.innerHTML = isCustomLinksExpanded ? `<span data-i18n="collapseMore">${t('collapseMore')}</span> <i class="fas fa-chevron-up text-[10px]"></i>` : `<span data-i18n="expandMore">${t('expandMore')}</span> (${links.length - 9}) <i class="fas fa-chevron-down text-[10px]"></i>`; 
             } else { actionWrapper.classList.add('hidden'); }
         }
 
