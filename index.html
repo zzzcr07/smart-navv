@@ -104,12 +104,11 @@
             margin-top: 1rem;
         }
 
-        /* ===== 修复 Tooltip 样式 - 关键修复 ===== */
+        /* Tooltip 样式 */
         .link-tooltip-wrapper {
             position: relative;
             display: inline-flex;
             align-items: center;
-            /* 关键：允许提示框溢出容器 */
             overflow: visible !important;
         }
         .link-tooltip-wrapper .tooltip-text {
@@ -126,7 +125,6 @@
             line-height: 1.4;
             position: absolute;
             z-index: 200;
-            /* 增加间距，避免被遮挡 */
             bottom: calc(100% + 12px);
             left: 50%;
             transform: translateX(-50%);
@@ -170,11 +168,57 @@
         .group:hover .edit-desc-btn:hover {
             opacity: 1;
         }
-        /* 确保卡片内的容器不裁剪提示框 */
         .glass-card,
         .group,
         #custom-links-container > div {
             overflow: visible !important;
+        }
+
+        /* ===== 搜索引擎菜单 - 向上展开 ===== */
+        #engine-menu {
+            position: absolute;
+            left: 2px;
+            bottom: calc(100% + 8px);  /* 从底部向上弹出，+8px 留出间距 */
+            top: auto !important;      /* 覆盖原来的 top: full */
+            width: 11rem;             /* w-44 */
+            background-color: #0f172a;
+            border: 1px solid #1e293b;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+            display: none;
+            backdrop-filter: blur(12px);
+            overflow: hidden;
+            z-index: 110;
+        }
+        /* 日间模式适配 */
+        body.theme-light #engine-menu {
+            background-color: #ffffff;
+            border-color: #e2e8f0;
+        }
+        body.theme-light #engine-menu button {
+            color: #334155;
+        }
+        body.theme-light #engine-menu button:hover {
+            background: rgba(79, 70, 229, 0.08);
+        }
+        /* 确保菜单出现在搜索框上方，不被裁剪 */
+        .search-wrapper .relative {
+            overflow: visible !important;
+        }
+        /* 小三角指示器（可选），朝下指向搜索框 */
+        #engine-menu::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 20px;
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 8px solid #1e293b;
+        }
+        body.theme-light #engine-menu::after {
+            border-top-color: #ffffff;
         }
     </style>
 </head>
@@ -255,12 +299,13 @@
         <div class="search-wrapper w-full mb-2 relative z-[100]">
             <form id="search-form" action="https://www.google.com/search" method="get" target="_blank" rel="noopener noreferrer" class="relative">
                 <div class="flex items-center glass-input rounded-full border border-slate-700/40 shadow-2xl focus-within:border-indigo-500/80 transition-all duration-300 px-1">
-                    <div class="relative pl-3">
+                    <div class="relative pl-3" style="overflow: visible !important;">
                         <button type="button" aria-label="切换搜索引擎" id="engine-btn" onclick="toggleEngineMenu(event)" class="flex items-center space-x-2 text-slate-400 hover:text-indigo-400 transition-colors py-3 pr-2 cursor-pointer">
                             <i id="engine-icon" class="fab fa-google text-blue-400"></i>
                             <i class="fas fa-chevron-down text-xs opacity-50"></i>
                         </button>
-                        <div id="engine-menu" class="absolute left-2 top-full mt-2 w-44 bg-slate-950/95 border border-slate-800 rounded-xl shadow-2xl hidden backdrop-blur-md overflow-hidden z-[110]">
+                        <!-- 搜索引擎菜单 - 向上展开 -->
+                        <div id="engine-menu" class="hidden">
                             <button type="button" onclick="selectEngine('google')" class="w-full text-left px-4 py-2.5 hover:bg-indigo-600/20 text-sm flex items-center space-x-2 cursor-pointer"><i class="fab fa-google text-blue-400"></i> <span>Google 搜索</span></button>
                             <button type="button" onclick="selectEngine('baidu')" class="w-full text-left px-4 py-2.5 hover:bg-indigo-600/20 text-sm flex items-center space-x-2 cursor-pointer"><i class="fas fa-paw text-red-400"></i> <span>百度搜索</span></button>
                             <button type="button" onclick="selectEngine('translate')" class="w-full text-left px-4 py-2.5 hover:bg-indigo-600/20 text-sm flex items-center space-x-2 cursor-pointer"><i class="fas fa-language text-emerald-400"></i> <span>谷歌翻译</span></button>
@@ -748,7 +793,10 @@
             wiki: { action: 'https://zh.wikipedia.org/w/index.php', name: 'search', placeholderKey: 'searchWiki', icon: 'fas fa-wikipedia-w text-slate-300' },
             github: { action: 'https://github.com/search', name: 'q', placeholderKey: 'searchGithub', icon: 'fab fa-github text-slate-400' }
         };
-        function toggleEngineMenu(e) { e.stopPropagation(); document.getElementById('engine-menu').classList.toggle('hidden'); }
+        function toggleEngineMenu(e) { 
+            e.stopPropagation(); 
+            document.getElementById('engine-menu').classList.toggle('hidden'); 
+        }
         function selectEngine(key) { 
             currentEngineKey = key; 
             const form = document.getElementById('search-form'); 
@@ -893,7 +941,10 @@
         async function deleteCustomLink(e, index) { e.preventDefault(); e.stopPropagation(); if(!confirm(t('delConfirm'))) return; try { const res = await fetch('/api/links'); let links = res.ok ? await res.json() : JSON.parse(localStorage.getItem('nav_custom_links') || '[]'); links.splice(index, 1); await fetch('/api/links', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(links) }); localStorage.setItem('nav_custom_links', JSON.stringify(links)); if(links.length <= 9) isCustomLinksExpanded = false; loadCustomLinks(); } catch(error) { const links = JSON.parse(localStorage.getItem('nav_custom_links') || '[]'); links.splice(index, 1); localStorage.setItem('nav_custom_links', JSON.stringify(links)); if(links.length <= 9) isCustomLinksExpanded = false; loadCustomLinks(); } }
 
         // --- 初始化 ---
-        document.addEventListener('click', () => { document.getElementById('engine-menu').classList.add('hidden'); document.getElementById('theme-panel').classList.add('hidden'); });
+        document.addEventListener('click', () => { 
+            document.getElementById('engine-menu').classList.add('hidden'); 
+            document.getElementById('theme-panel').classList.add('hidden'); 
+        });
         checkAdminSession(); document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en'; applyLanguage(); initCloudData();
     </script>
 </body>
