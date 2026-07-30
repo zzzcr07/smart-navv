@@ -80,6 +80,40 @@
         body:not(.is-admin) .admin-only {
             display: none !important;
         }
+
+        /* 布局调整：导航在上，搜索在下，紧凑无空白 */
+        .nav-container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding: 1rem 1.5rem 1.5rem 1.5rem;
+        }
+        .nav-grid-wrapper {
+            flex: 1 0 auto;
+            margin-bottom: 2rem;
+        }
+        .search-wrapper {
+            flex-shrink: 0;
+            width: 100%;
+            max-width: 48rem;
+            margin: 0 auto;
+        }
+        /* 移除顶部多余间距 */
+        .nav-container .max-w-7xl {
+            padding-top: 0.5rem;
+            padding-bottom: 0.5rem;
+        }
+        /* 调整卡片间距 */
+        #main-nav-grid {
+            gap: 1.5rem;
+        }
+        /* 让底部搜索框更紧凑 */
+        .search-wrapper .glass-input {
+            border-radius: 2rem;
+        }
+        footer {
+            margin-top: 1rem;
+        }
     </style>
 </head>
 <body class="theme-dark font-sans antialiased selection:bg-indigo-500 selection:text-white">
@@ -128,16 +162,52 @@
         </div>
     </div>
 
-    <div class="max-w-7xl mx-auto px-4 py-12 lg:py-20 flex flex-col items-center">
+    <!-- 主容器：导航在上，搜索在下 -->
+    <div class="nav-container max-w-7xl mx-auto">
         
-        <!-- ========== 时间、问候、天气 已移除 ========== -->
+        <!-- 导航卡片网格 - 置顶 -->
+        <div class="nav-grid-wrapper w-full">
+            <div id="main-nav-grid" class="w-full grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6 relative z-10 items-start">
 
-        <!-- 搜索引擎组件 -->
-        <div class="w-full max-w-2xl mb-16 relative z-[100]">
+                <div id="card-custom" class="glass-card rounded-2xl p-5 shadow-xl hover:border-pink-500/30 transition-all duration-300 xl:col-span-1">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="text-lg font-semibold text-pink-400 flex items-center"><i class="fas fa-folder-plus mr-2.5"></i> <span data-i18n="cardCustom">快捷应用</span></h3>
+                        <button type="button" onclick="openLinkModal('custom')" class="admin-only text-xs px-2.5 py-1 bg-pink-600/20 text-pink-400 border border-pink-500/20 rounded-lg hover:bg-pink-600/40 transition-colors cursor-pointer z-[50]" data-i18n="addCloud">添加 (云端)</button>
+                    </div>
+                    <div id="custom-links-container"></div>
+                    <div id="expand-action-wrapper" class="mt-3 pt-2 border-t border-slate-500/10 text-center hidden">
+                        <button onclick="toggleExpandCustomLinks()" id="expand-btn" class="text-xs font-semibold text-pink-400 hover:text-pink-300 transition-colors cursor-pointer inline-flex items-center gap-1">
+                            <span data-i18n="expandMore">展开显示更多</span> <i class="fas fa-chevron-down text-[10px]"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 添加动态分类按钮 (管理员可见) -->
+                <div id="add-section-card" class="admin-only glass-card rounded-2xl p-5 flex flex-col items-center justify-center cursor-pointer hover:border-indigo-500/50 transition-all border-dashed border-2 border-slate-500/30 xl:col-span-1" onclick="addCustomSection()" style="min-height: 160px;">
+                    <i class="fas fa-plus text-3xl text-slate-400 mb-2"></i>
+                    <span class="text-sm font-medium text-slate-400 mt-1" data-i18n="addSectionBtn">添加自定义区域</span>
+                </div>
+
+            </div>
+
+            <!-- 重要链接卡片 -->
+            <div class="w-full relative z-10 mb-4">
+                <div class="glass-card rounded-2xl p-5 shadow-xl hover:border-emerald-500/20 transition-all duration-300">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="text-base font-semibold text-emerald-400 flex items-center"><i class="fas fa-handshake mr-2.5"></i> <span data-i18n="cardFriend">重要链接</span></h3>
+                        <button type="button" onclick="openLinkModal('friend')" class="admin-only text-xs px-2.5 py-1 bg-emerald-600/20 text-emerald-400 border border-emerald-500/20 rounded-lg hover:bg-emerald-600/40 transition-colors cursor-pointer z-[50]" data-i18n="addLocal">添加 (本地)</button>
+                    </div>
+                    <div id="friend-links-container" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 搜索引擎组件 - 移至底部 -->
+        <div class="search-wrapper w-full mb-2 relative z-[100]">
             <form id="search-form" action="https://yiso.fun/info?searchKey=" method="get" target="_blank" rel="noopener noreferrer" class="relative">
-                <div class="flex items-center glass-input rounded-2xl border border-slate-700/40 shadow-2xl focus-within:border-indigo-500/80 transition-all duration-300">
-                    <div class="relative pl-4">
-                        <button type="button" aria-label="切换搜索引擎" id="engine-btn" onclick="toggleEngineMenu(event)" class="flex items-center space-x-2 text-slate-400 hover:text-indigo-400 transition-colors py-4 pr-2 cursor-pointer">
+                <div class="flex items-center glass-input rounded-full border border-slate-700/40 shadow-2xl focus-within:border-indigo-500/80 transition-all duration-300 px-1">
+                    <div class="relative pl-3">
+                        <button type="button" aria-label="切换搜索引擎" id="engine-btn" onclick="toggleEngineMenu(event)" class="flex items-center space-x-2 text-slate-400 hover:text-indigo-400 transition-colors py-3 pr-2 cursor-pointer">
                             <i id="engine-icon" class="fab fa-google text-blue-400"></i>
                             <i class="fas fa-chevron-down text-xs opacity-50"></i>
                         </button>
@@ -148,49 +218,15 @@
                             <button type="button" onclick="selectEngine('github')" class="w-full text-left px-4 py-2.5 hover:bg-indigo-600/20 text-sm flex items-center space-x-2 cursor-pointer"><i class="fab fa-github text-slate-400"></i> <span>GitHub</span></button>
                         </div>
                     </div>
-                    <input type="text" id="search-input" name="q" data-i18n-placeholder="searchGoogle" placeholder="在 Google 中搜索..." autocomplete="off" class="w-full bg-transparent border-none py-4 px-3 focus:outline-none focus:ring-0 text-base">
-                    <button type="submit" aria-label="搜索" class="mr-3 p-2.5 text-slate-400 hover:text-indigo-400 transition-colors">
+                    <input type="text" id="search-input" name="q" data-i18n-placeholder="searchGoogle" placeholder="在 Google 中搜索..." autocomplete="off" class="w-full bg-transparent border-none py-3 px-3 focus:outline-none focus:ring-0 text-base">
+                    <button type="submit" aria-label="搜索" class="mr-2 p-2 text-slate-400 hover:text-indigo-400 transition-colors">
                         <i class="fas fa-search text-lg"></i>
                     </button>
                 </div>
             </form>
         </div>
 
-        <!-- 导航卡片网格 -->
-        <div id="main-nav-grid" class="w-full grid grid-cols-1 xl:grid-cols-3 gap-8 mb-8 relative z-10 items-start">
-
-            <div id="card-custom" class="glass-card rounded-2xl p-6 shadow-xl hover:border-pink-500/30 transition-all duration-300 xl:col-span-1">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-semibold text-pink-400 flex items-center"><i class="fas fa-folder-plus mr-2.5"></i> <span data-i18n="cardCustom">快捷应用</span></h3>
-                    <button type="button" onclick="openLinkModal('custom')" class="admin-only text-xs px-2.5 py-1 bg-pink-600/20 text-pink-400 border border-pink-500/20 rounded-lg hover:bg-pink-600/40 transition-colors cursor-pointer z-[50]" data-i18n="addCloud">添加 (云端)</button>
-                </div>
-                <div id="custom-links-container"></div>
-                <div id="expand-action-wrapper" class="mt-4 pt-2 border-t border-slate-500/10 text-center hidden">
-                    <button onclick="toggleExpandCustomLinks()" id="expand-btn" class="text-xs font-semibold text-pink-400 hover:text-pink-300 transition-colors cursor-pointer inline-flex items-center gap-1">
-                        <span data-i18n="expandMore">展开显示更多</span> <i class="fas fa-chevron-down text-[10px]"></i>
-                    </button>
-                </div>
-            </div>
-
-            <!-- 添加动态分类按钮 (管理员可见) -->
-            <div id="add-section-card" class="admin-only glass-card rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer hover:border-indigo-500/50 transition-all border-dashed border-2 border-slate-500/30 xl:col-span-1" onclick="addCustomSection()" style="min-height: 180px;">
-                <i class="fas fa-plus text-3xl text-slate-400 mb-2"></i>
-                <span class="text-sm font-medium text-slate-400 mt-1" data-i18n="addSectionBtn">添加自定义区域</span>
-            </div>
-
-        </div>
-
-        <div class="w-full relative z-10 mb-12">
-            <div class="glass-card rounded-2xl p-6 shadow-xl hover:border-emerald-500/20 transition-all duration-300">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-base font-semibold text-emerald-400 flex items-center"><i class="fas fa-handshake mr-2.5"></i> <span data-i18n="cardFriend">重要链接</span></h3>
-                    <button type="button" onclick="openLinkModal('friend')" class="admin-only text-xs px-2.5 py-1 bg-emerald-600/20 text-emerald-400 border border-emerald-500/20 rounded-lg hover:bg-emerald-600/40 transition-colors cursor-pointer z-[50]" data-i18n="addLocal">添加 (本地)</button>
-                </div>
-                <div id="friend-links-container" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3"></div>
-            </div>
-        </div>
-
-        <footer id="admin-trigger" ondblclick="triggerAdminLogin()" class="text-slate-500 text-xs mt-4 cursor-pointer select-none tracking-wide hover:text-indigo-400/70 transition-colors" title="后台入口 (双击 / Double Click)">
+        <footer id="admin-trigger" ondblclick="triggerAdminLogin()" class="text-slate-500 text-xs mt-3 cursor-pointer select-none tracking-wide hover:text-indigo-400/70 transition-colors text-center">
             <span data-i18n="footerText">&copy; KK • 导航 · Powered by Cloudflare</span> <span id="admin-badge" class="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-400 font-bold hidden" data-i18n="adminBadge">已登入</span>
         </footer>
     </div>
@@ -498,7 +534,7 @@
                 }
 
                 const card = document.createElement('div');
-                card.className = "dynamic-section-card glass-card rounded-2xl p-6 shadow-xl hover:border-indigo-500/30 transition-all duration-300 relative xl:col-span-1";
+                card.className = "dynamic-section-card glass-card rounded-2xl p-5 shadow-xl hover:border-indigo-500/30 transition-all duration-300 relative xl:col-span-1";
                 card.id = `section-${sec.id}`;
                 card.draggable = true;
                 card.ondragstart = (e) => handleDragStart(e, 'section', sec.id);
@@ -548,7 +584,7 @@
                         ? `<span data-i18n="collapseMore">${t('collapseMore')}</span> <i class="fas fa-chevron-up text-[10px]"></i>`
                         : `<span data-i18n="expandMore">${t('expandMore')}</span> (${linkCount - 9}) <i class="fas fa-chevron-down text-[10px]"></i>`;
                     expandHtml = `
-                        <div class="mt-4 pt-2 border-t border-slate-500/10 text-center">
+                        <div class="mt-3 pt-2 border-t border-slate-500/10 text-center">
                             <button type="button" onclick="toggleDynamicSectionExpand('${sec.id}')" class="text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer inline-flex items-center gap-1">
                                 ${btnText}
                             </button>
@@ -557,7 +593,7 @@
                 }
 
                 card.innerHTML = `
-                    <div class="flex justify-between items-center mb-4">
+                    <div class="flex justify-between items-center mb-3">
                         <h3 class="text-lg font-semibold text-indigo-400 flex items-center cursor-move" title="长按拖拽排序" style="cursor: grab;">
                             <i class="fas fa-grip-vertical mr-2 text-slate-500 opacity-60 admin-only text-sm"></i>
                             <i class="fas fa-layer-group mr-2.5"></i> <span>${sec.title}</span>
