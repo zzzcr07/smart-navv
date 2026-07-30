@@ -104,8 +104,7 @@
             margin-top: 1rem;
         }
 
-        /* ===== 修复 Tooltip 样式 ===== */
-        /* 容器相对定位，让提示框相对于容器定位 */
+        /* Tooltip 样式 - 修复版 */
         .link-tooltip-wrapper {
             position: relative;
             display: inline-flex;
@@ -156,6 +155,18 @@
         }
         body.theme-light .link-tooltip-wrapper .tooltip-text::after {
             border-color: #f1f5f9 transparent transparent transparent;
+        }
+
+        /* 编辑备注按钮 */
+        .edit-desc-btn {
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .group:hover .edit-desc-btn {
+            opacity: 0.6;
+        }
+        .group:hover .edit-desc-btn:hover {
+            opacity: 1;
         }
     </style>
 </head>
@@ -289,6 +300,23 @@
         </div>
     </div>
 
+    <!-- 编辑备注的微型弹窗 -->
+    <div id="edit-desc-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-[400]" onclick="closeEditDescModal(event)">
+        <div class="bg-slate-900 border border-slate-700/80 p-6 rounded-2xl w-full max-w-sm shadow-2xl text-slate-100" onclick="event.stopPropagation()">
+            <h4 class="text-md font-semibold text-slate-200 mb-4 flex items-center"><i class="fas fa-pen mr-2 text-indigo-400"></i>编辑备注</h4>
+            <div class="space-y-4 mb-6">
+                <div>
+                    <label class="text-xs text-slate-400 block mb-1.5 font-medium">备注内容 (悬浮时显示)</label>
+                    <input type="text" id="edit-desc-input" placeholder="请输入备注..." class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition-all">
+                </div>
+            </div>
+            <div class="flex justify-end space-x-3">
+                <button type="button" onclick="closeEditDescModal()" class="px-4 py-2 bg-slate-800 text-slate-400 text-xs font-medium rounded-xl hover:bg-slate-700 transition-colors cursor-pointer" data-i18n="btnCancel">取消</button>
+                <button type="button" onclick="saveEditDesc()" class="px-4 py-2 bg-indigo-600 text-white text-xs font-medium rounded-xl hover:bg-indigo-500 transition-colors cursor-pointer shadow-lg shadow-indigo-600/20">保存备注</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // --- 0. 全局状态与配置 ---
         let currentLang = localStorage.getItem('nav_lang') || 'zh';
@@ -296,6 +324,7 @@
         let expandedDynamicSections = {}; 
         let currentModalTarget = 'custom'; 
         let currentEngineKey = 'google';
+        let editingLinkRef = null; // 用于编辑备注时定位 { source: 'custom'|'section', secId, index }
         
         let cloudConfig = { wallpaper: "", dynamicSections: [], adminPwd: "" };
 
@@ -493,6 +522,16 @@
             updateCloudConfig('wallpaper', "");
         }
 
+        // --- 工具：从URL提取域名作为默认备注 ---
+        function extractDomainFromUrl(url) {
+            try {
+                const urlObj = new URL(url);
+                return urlObj.hostname.replace(/^www\./, '');
+            } catch {
+                return '';
+            }
+        }
+
         // --- 动态区域 ---
         function saveDynamicSections(sections) {
             localStorage.setItem('nav_dynamic_sections', JSON.stringify(sections));
@@ -528,6 +567,53 @@
         function toggleDynamicSectionExpand(secId) {
             expandedDynamicSections[secId] = !expandedDynamicSections[secId];
             renderDynamicSections();
+        }
+
+        // --- 编辑备注 ---
+        function openEditDescModal(source, secId, index) {
+            editingLinkRef = { source, secId, index };
+            let currentDesc = '';
+            if (source === 'custom') {
+                const links = JSON.parse(localStorage.getItem('nav_custom_links') || '[]');
+                if (links[index]) currentDesc = links[index].desc || '';
+            } else if (source === 'section') {
+                const secs = cloudConfig.dynamicSections || [];
+                const sec = secs.find(s => s.id === secId);
+                if (sec && sec.links[index]) currentDesc = sec.links[index].desc || '';
+            }
+            document.getElementById('edit-desc-input').value = currentDesc;
+            document.getElementById('edit-desc-modal').classList.remove('hidden');
+        }
+
+        function closeEditDescModal(e) {
+            if (e && e.target && e.target.id !== 'edit-desc-modal') return;
+            document.getElementById('edit-desc-modal').classList.add('hidden');
+            editingLinkRef = null;
+        }
+
+        function saveEditDesc() {
+            if (!editingLinkRef) return;
+            const newDesc = document.getElementById('edit-desc-input').value.trim();
+            const { source, secId, index } = editingLinkRef;
+            
+            if (source === 'custom') {
+                let links = JSON.parse(localStorage.getItem('nav_custom_links') || '[]');
+                if (links[index]) {
+                    links[index].desc = newDesc;
+                    localStorage.setItem('nav_custom_links', JSON.stringify(links));
+                    // 同步云端
+                    fetch('/api/links', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(links) }).catch(() => {});
+                    loadCustomLinks();
+                }
+            } else if (source === 'section') {
+                let secs = cloudConfig.dynamicSections || [];
+                const sec = secs.find(s => s.id === secId);
+                if (sec && sec.links[index]) {
+                    sec.links[index].desc = newDesc;
+                    saveDynamicSections(secs);
+                }
+            }
+            closeEditDescModal();
         }
 
         function renderDynamicSections() {
@@ -576,11 +662,16 @@
 
                     visibleLinks.forEach((link, idx) => {
                         const displayName = getLocalizedLinkName(link.name, link.url);
-                        const description = link.desc || '';
+                        // 如果没有 desc，自动从 URL 提取域名作为默认备注
+                        let description = link.desc || '';
+                        if (!description && link.url) {
+                            description = extractDomainFromUrl(link.url);
+                            // 自动补全到数据中
+                            link.desc = description;
+                        }
                         let displayIcon = `<div class="${iconSizeClass} rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold shrink-0">${displayName.charAt(0).toUpperCase()}</div>`;
                         try { if(link.url) displayIcon = `<img src="https://unavatar.io/duckduckgo/${new URL(link.url).hostname}" draggable="false" onerror="this.style.display='none'" class="${imgSizeClass} rounded object-contain shrink-0" alt="icon" />`; } catch(e){}
 
-                        // 修复：使用 wrapper 包裹链接和提示框
                         linksHtml += `
                         <div class="group relative flex items-center justify-between ${pClass} bg-slate-500/5 border border-slate-500/10 rounded-xl hover:bg-indigo-600/10 transition-all"
                              draggable="true"
@@ -597,7 +688,10 @@
                                     ${description ? `<span class="tooltip-text">${description}</span>` : ''}
                                 </div>
                             </div>
-                            <button type="button" onclick="deleteSectionLink(event, '${sec.id}', ${idx})" class="admin-only absolute ${btnClass} text-slate-400 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-500/20 rounded cursor-pointer shrink-0"><i class="fas fa-trash-alt"></i></button>
+                            <div class="flex items-center gap-1 shrink-0">
+                                <button type="button" onclick="openEditDescModal('section', '${sec.id}', ${idx})" class="admin-only edit-desc-btn text-[10px] text-slate-400 hover:text-indigo-400 transition-opacity" title="编辑备注"><i class="fas fa-pen"></i></button>
+                                <button type="button" onclick="deleteSectionLink(event, '${sec.id}', ${idx})" class="admin-only ${btnClass} text-slate-400 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-500/20 rounded cursor-pointer shrink-0"><i class="fas fa-trash-alt"></i></button>
+                            </div>
                         </div>`;
                     });
                 }
@@ -738,6 +832,18 @@
             const container = document.getElementById('custom-links-container'); const actionWrapper = document.getElementById('expand-action-wrapper');
             container.innerHTML = `<div class="col-span-full text-center text-xs text-slate-400/60 py-10"><i class="fas fa-spinner fa-spin"></i> ${t('loadingCloud')}</div>`;
             let links = []; try { const res = await fetch('/api/links'); if(res.ok) links = await res.json(); else throw new Error(); } catch(e) { links = JSON.parse(localStorage.getItem('nav_custom_links') || '[]'); }
+            
+            // 为没有 desc 的链接自动补全域名
+            links = links.map(link => {
+                if (!link.desc && link.url) {
+                    link.desc = extractDomainFromUrl(link.url);
+                }
+                return link;
+            });
+            localStorage.setItem('nav_custom_links', JSON.stringify(links));
+            // 同步云端
+            fetch('/api/links', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(links) }).catch(() => {});
+            
             container.innerHTML = '';
             
             if(links.length === 0) { 
@@ -764,7 +870,6 @@
                 let displayIcon = `<div class="${iconSizeClass} rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold shrink-0">${displayName.charAt(0).toUpperCase()}</div>`;
                 try { if(item.url) displayIcon = `<img src="https://unavatar.io/duckduckgo/${new URL(item.url).hostname}" draggable="false" onerror="this.style.display='none'" class="${imgSizeClass} rounded object-contain shrink-0" alt="icon" />`; } catch(err){}
                 
-                // 修复：使用 wrapper 包裹链接和提示框
                 container.innerHTML += `
                     <div class="group relative flex items-center justify-between ${pClass} bg-slate-500/5 border border-slate-500/10 rounded-xl hover:bg-indigo-600/10 transition-all">
                         <div class="flex items-center w-full overflow-hidden">
@@ -775,13 +880,16 @@
                                 ${description ? `<span class="tooltip-text">${description}</span>` : ''}
                             </div>
                         </div>
-                        <button type="button" onclick="deleteCustomLink(event, ${index})" class="admin-only absolute ${btnClass} text-slate-400 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-500/20 rounded cursor-pointer shrink-0"><i class="fas fa-trash-alt"></i></button>
+                        <div class="flex items-center gap-1 shrink-0">
+                            <button type="button" onclick="openEditDescModal('custom', null, ${index})" class="admin-only edit-desc-btn text-[10px] text-slate-400 hover:text-indigo-400 transition-opacity" title="编辑备注"><i class="fas fa-pen"></i></button>
+                            <button type="button" onclick="deleteCustomLink(event, ${index})" class="admin-only ${btnClass} text-slate-400 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-500/20 rounded cursor-pointer shrink-0"><i class="fas fa-trash-alt"></i></button>
+                        </div>
                     </div>`;
             });
 
             if (showExpandBtn) { 
                 actionWrapper.classList.remove('hidden'); const btn = document.getElementById('expand-btn'); 
-                btn.innerHTML = isCustomLinksExpanded ? `<span data-i18n="collapseMore">${t('collapseMore')}</span> <i class="fas fa-chevron-up text-[10px]"></i>` : `<span data-i18n="expandMore">${t('expandMore')}</span> (${links.length - 9}) <i class="fas fa-chevron-down text-[10px]"></i>`; 
+                btn.innerHTML = isCustomLinksExpanded ? `<span data-i18n="collapseMore">${t('collapseMore')}</span> <i class="fas fa-chevron-up text-[10px]"></i>` : `<span data-i18n="expandMore">${t('expandMore')}</span> (${links.length - 9}) <i class="fas fa-chevron-down text-[10px]</i>`; 
             } else { actionWrapper.classList.add('hidden'); }
         }
 
