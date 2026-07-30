@@ -114,6 +114,60 @@
         footer {
             margin-top: 1rem;
         }
+
+        /* 网址悬浮提示框 (Tooltip) 样式 */
+        .link-tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+        }
+        .link-tooltip .tooltip-text {
+            visibility: hidden;
+            width: 220px;
+            background-color: #1e293b;
+            color: #f1f5f9;
+            text-align: left;
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: 1px solid #475569;
+            font-size: 12px;
+            font-weight: 400;
+            line-height: 1.4;
+            position: absolute;
+            z-index: 200;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.25s ease, visibility 0.25s ease;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+            pointer-events: none;
+            word-break: break-word;
+            white-space: normal;
+        }
+        .link-tooltip .tooltip-text::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -6px;
+            border-width: 6px;
+            border-style: solid;
+            border-color: #1e293b transparent transparent transparent;
+        }
+        .link-tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+        /* 针对日间模式的适配 */
+        body.theme-light .link-tooltip .tooltip-text {
+            background-color: #f1f5f9;
+            color: #0f172a;
+            border-color: #cbd5e1;
+        }
+        body.theme-light .link-tooltip .tooltip-text::after {
+            border-color: #f1f5f9 transparent transparent transparent;
+        }
     </style>
 </head>
 <body class="theme-dark font-sans antialiased selection:bg-indigo-500 selection:text-white">
@@ -182,7 +236,7 @@
                     </div>
                 </div>
 
-                <!-- 添加动态分类按钮 (管理员可见) -->
+                <!-- 添加动态分类按钮 (管理员可见) - 已恢复 -->
                 <div id="add-section-card" class="admin-only glass-card rounded-2xl p-5 flex flex-col items-center justify-center cursor-pointer hover:border-indigo-500/50 transition-all border-dashed border-2 border-slate-500/30 xl:col-span-1" onclick="addCustomSection()" style="min-height: 160px;">
                     <i class="fas fa-plus text-3xl text-slate-400 mb-2"></i>
                     <span class="text-sm font-medium text-slate-400 mt-1" data-i18n="addSectionBtn">添加自定义区域</span>
@@ -224,7 +278,7 @@
         </footer>
     </div>
 
-    <!-- 弹窗模态框 -->
+    <!-- 弹窗模态框 - 增加了备注(描述)输入框 -->
     <div id="modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-[300]" onclick="closeModalOnBlank(event)">
         <div class="bg-slate-900 border border-slate-700/80 p-6 rounded-2xl w-full max-w-sm shadow-2xl text-slate-100" onclick="event.stopPropagation()">
             <h4 id="modal-title" class="text-md font-semibold text-slate-200 mb-4 flex items-center"><i class="fas fa-link mr-2 text-indigo-400"></i><span id="modal-title-text">添加网址</span></h4>
@@ -236,6 +290,11 @@
                 <div>
                     <label class="text-xs text-slate-400 block mb-1.5 font-medium" data-i18n="siteUrl">网站网址 (URL)</label>
                     <input type="text" id="site-url" placeholder="https://zh.wikipedia.org/wiki/" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition-all">
+                </div>
+                <!-- 新增备注/描述输入框 -->
+                <div>
+                    <label class="text-xs text-slate-400 block mb-1.5 font-medium" data-i18n="siteDesc">备注 / 描述 (悬浮时显示)</label>
+                    <input type="text" id="site-desc" placeholder="例如：这是一个常用的开发文档网站" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition-all">
                 </div>
             </div>
             <div class="flex justify-end space-x-3">
@@ -269,7 +328,7 @@
                 cardCustom: "快捷应用", 
                 addCloud: "添加 (云端)", expandMore: "展开显示更多", collapseMore: "收起部分站点",
                 footerText: "&copy; KK • 导航 · Powered by Cloudflare", adminBadge: "已登录",
-                modalAddCloud: "添加云端站长推荐", modalAddFriend: "添加友情链接", siteName: "网站名称", siteNamePlace: "例如：百度", siteUrl: "网站网址 (URL)",
+                modalAddCloud: "添加云端站长推荐", modalAddFriend: "添加友情链接", siteName: "网站名称", siteNamePlace: "例如：百度", siteUrl: "网站网址 (URL)", siteDesc: "备注 / 描述 (悬浮时显示)",
                 btnCancel: "取消", btnSave: "保存站点", noCloudLinks: "暂无自定义链接", loadingCloud: "正在从云端加载...",
                 delConfirm: "确定要删除这个链接吗？", pwdPrompt: "🔐 请输入后台管理员安全密码：", pwdSuccess: "🎉 成功解锁", pwdFail: "❌ 密码错误", logoutMsg: "🔒 已安全退出管理后台，页面回归只读状态。",
                 validUrlMsg: "提示：请输入有效的网址！",
@@ -285,7 +344,7 @@
                 cardCustom: "Webmaster Picks",
                 addCloud: "Add (Cloud)", expandMore: "Show More", collapseMore: "Collapse",
                 footerText: "&copy; 2026 TechShare Smart Nav · Powered by Cloudflare", adminBadge: "Logged In",
-                modalAddCloud: "Add Cloud Link", modalAddFriend: "Add Friend Link", siteName: "Site Name", siteNamePlace: "e.g., Google", siteUrl: "Site URL",
+                modalAddCloud: "Add Cloud Link", modalAddFriend: "Add Friend Link", siteName: "Site Name", siteNamePlace: "e.g., Google", siteUrl: "Site URL", siteDesc: "Note / Description (shown on hover)",
                 btnCancel: "Cancel", btnSave: "Save Site", noCloudLinks: "No custom links yet", loadingCloud: "Loading from cloud...",
                 delConfirm: "Are you sure you want to delete this link?", pwdPrompt: "🔐 Enter Admin Password:", pwdSuccess: "🎉 Authenticated! Admin features unlocked.", pwdFail: "❌ Incorrect password!", logoutMsg: "🔒 Logged out safely. Read-only mode activated.",
                 validUrlMsg: "Please enter a valid URL!",
@@ -550,6 +609,9 @@
 
                     visibleLinks.forEach((link, idx) => {
                         const displayName = getLocalizedLinkName(link.name, link.url);
+                        // 处理描述字段，若不存在则置空
+                        const description = link.desc || '';
+                        // 构建带 tooltip 的图标
                         let displayIcon = `<div class="${iconSizeClass} rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold shrink-0">${displayName.charAt(0).toUpperCase()}</div>`;
                         try { if(link.url) displayIcon = `<img src="https://unavatar.io/duckduckgo/${new URL(link.url).hostname}" draggable="false" onerror="this.style.display='none'" class="${imgSizeClass} rounded object-contain shrink-0" alt="icon" />`; } catch(e){}
 
@@ -562,8 +624,9 @@
                              ondrop="handleDrop(event, 'link', '${sec.id}', ${idx})">
                             <div class="flex items-center w-full overflow-hidden">
                                 <i class="fas fa-grip-vertical text-slate-500 opacity-0 group-hover:opacity-50 transition-opacity ${dragMrClass} cursor-move admin-only text-[10px] shrink-0"></i>
-                                <a href="${link.url}" draggable="false" target="_blank" rel="noopener noreferrer" class="flex items-center ${spaceXClass} truncate w-full ${prClass}">
+                                <a href="${link.url}" draggable="false" target="_blank" rel="noopener noreferrer" class="flex items-center ${spaceXClass} truncate w-full ${prClass} link-tooltip">
                                     ${displayIcon} <span class="${textSizeClass} font-medium truncate">${displayName}</span>
+                                    ${description ? `<span class="tooltip-text">${description}</span>` : ''}
                                 </a>
                             </div>
                             <button type="button" onclick="deleteSectionLink(event, '${sec.id}', ${idx})" class="admin-only absolute ${btnClass} text-slate-400 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-500/20 rounded cursor-pointer shrink-0"><i class="fas fa-trash-alt"></i></button>
@@ -633,7 +696,6 @@
             const icon = document.getElementById('engine-icon'); 
             const engine = engines[key];
             
-            // 对于翻译功能，需要特殊处理表单提交
             if (key === 'translate') {
                 form.onsubmit = function(e) {
                     e.preventDefault();
@@ -643,7 +705,7 @@
                     }
                     return false;
                 };
-                form.action = '#'; // 防止默认提交
+                form.action = '#';
             } else {
                 form.onsubmit = null;
                 form.action = engine.action;
@@ -656,25 +718,55 @@
             document.getElementById('engine-menu').classList.add('hidden');
         }
 
-        // --- 6. 链接管理 ---
-        function openLinkModal(target) { currentModalTarget = target; const textEl = document.getElementById('modal-title-text'); if(target === 'friend') textEl.innerText = t('modalAddFriend'); else if(target === 'custom') textEl.innerText = t('modalAddCloud'); else textEl.innerText = t('modalAddSection'); toggleModal(true); }
-        function toggleModal(show) { const modal = document.getElementById('modal'); if (show) { document.getElementById('site-name').value = ''; document.getElementById('site-url').value = ''; modal.classList.remove('hidden'); } else { modal.classList.add('hidden'); } }
+        // --- 6. 链接管理 (更新以支持 desc 字段) ---
+        function openLinkModal(target) { 
+            currentModalTarget = target; 
+            const textEl = document.getElementById('modal-title-text'); 
+            if(target === 'friend') textEl.innerText = t('modalAddFriend'); 
+            else if(target === 'custom') textEl.innerText = t('modalAddCloud'); 
+            else textEl.innerText = t('modalAddSection'); 
+            // 清空所有输入框
+            document.getElementById('site-name').value = ''; 
+            document.getElementById('site-url').value = ''; 
+            document.getElementById('site-desc').value = ''; 
+            toggleModal(true); 
+        }
+        function toggleModal(show) { const modal = document.getElementById('modal'); if (show) { modal.classList.remove('hidden'); } else { modal.classList.add('hidden'); } }
         function closeModalOnBlank(e) { if(e.target.id === 'modal') toggleModal(false); }
 
         async function saveActiveLink() {
-            const name = document.getElementById('site-name').value.trim(); let url = document.getElementById('site-url').value.trim();
+            const name = document.getElementById('site-name').value.trim(); 
+            let url = document.getElementById('site-url').value.trim();
+            const desc = document.getElementById('site-desc').value.trim(); // 获取描述
             if(!name || !url) return alert(currentLang === 'zh' ? '请完整填写名称和网址！' : 'Please fill in both name and URL!');
             if(!/^https?:\/\//i.test(url)) url = 'https://' + url;
 
+            const newLink = { name, url, desc }; // 包含 desc
+
             if (currentModalTarget.startsWith('section_')) {
-                const secId = currentModalTarget.replace('section_', ''); let secs = cloudConfig.dynamicSections || []; const sec = secs.find(s => s.id === secId);
-                if(sec) { sec.links.push({ name, url }); saveDynamicSections(secs); }
+                const secId = currentModalTarget.replace('section_', ''); 
+                let secs = cloudConfig.dynamicSections || []; 
+                const sec = secs.find(s => s.id === secId);
+                if(sec) { sec.links.push(newLink); saveDynamicSections(secs); }
             } else if(currentModalTarget === 'friend') {
-                // friend 功能已移除，但保留以防调用
+                // friend 功能已移除
             } else {
-                try { const res = await fetch('/api/links'); let links = res.ok ? await res.json() : JSON.parse(localStorage.getItem('nav_custom_links') || '[]'); links.push({ name, url }); await fetch('/api/links', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(links) }); localStorage.setItem('nav_custom_links', JSON.stringify(links)); loadCustomLinks(); } 
-                catch (error) { const links = JSON.parse(localStorage.getItem('nav_custom_links') || '[]'); links.push({ name, url }); localStorage.setItem('nav_custom_links', JSON.stringify(links)); loadCustomLinks(); }
-            } toggleModal(false);
+                try { 
+                    const res = await fetch('/api/links'); 
+                    let links = res.ok ? await res.json() : JSON.parse(localStorage.getItem('nav_custom_links') || '[]'); 
+                    links.push(newLink); 
+                    await fetch('/api/links', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(links) }); 
+                    localStorage.setItem('nav_custom_links', JSON.stringify(links)); 
+                    loadCustomLinks(); 
+                } 
+                catch (error) { 
+                    const links = JSON.parse(localStorage.getItem('nav_custom_links') || '[]'); 
+                    links.push(newLink); 
+                    localStorage.setItem('nav_custom_links', JSON.stringify(links)); 
+                    loadCustomLinks(); 
+                }
+            } 
+            toggleModal(false);
         }
 
         async function loadCustomLinks() {
@@ -703,14 +795,16 @@
 
             visibleLinks.forEach((item, index) => {
                 const displayName = getLocalizedLinkName(item.name, item.url);
+                const description = item.desc || '';
                 let displayIcon = `<div class="${iconSizeClass} rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold shrink-0">${displayName.charAt(0).toUpperCase()}</div>`;
                 try { if(item.url) displayIcon = `<img src="https://unavatar.io/duckduckgo/${new URL(item.url).hostname}" draggable="false" onerror="this.style.display='none'" class="${imgSizeClass} rounded object-contain shrink-0" alt="icon" />`; } catch(err){}
                 
                 container.innerHTML += `
                     <div class="group relative flex items-center justify-between ${pClass} bg-slate-500/5 border border-slate-500/10 rounded-xl hover:bg-indigo-600/10 transition-all">
                         <div class="flex items-center w-full overflow-hidden">
-                            <a href="${item.url}" draggable="false" target="_blank" rel="noopener noreferrer" class="flex items-center ${spaceXClass} truncate w-full ${prClass}">
+                            <a href="${item.url}" draggable="false" target="_blank" rel="noopener noreferrer" class="flex items-center ${spaceXClass} truncate w-full ${prClass} link-tooltip">
                                 ${displayIcon} <span class="${textSizeClass} font-medium truncate">${displayName}</span>
+                                ${description ? `<span class="tooltip-text">${description}</span>` : ''}
                             </a>
                         </div>
                         <button type="button" onclick="deleteCustomLink(event, ${index})" class="admin-only absolute ${btnClass} text-slate-400 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-500/20 rounded cursor-pointer shrink-0"><i class="fas fa-trash-alt"></i></button>
