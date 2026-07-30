@@ -1,16 +1,974 @@
-/* 假设其他导航框的宽度为 120px，高度为 40px */
-.nav-item, 
-.custom-area {  /* 将自定义区域与其他项应用相同规则 */
-  width: 120px;
-  height: 40px;
-  /* 您可能还需要统一内边距、字体大小等 */
-  padding: 5px 10px;
-  box-sizing: border-box;
-}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="KK • 导航。提供高效的搜索、云端自定义网址管理、动态天气与专属壁纸等个性化功能。">
+    <meta name="keywords" content="网址导航, 开发者导航, 智能导航, 响应式网站, 云端同步">
+    <title id="page-title">KK • 导航</title>
+    
+    <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
 
-/* 或者，如果您只想单独修正自定义区域，且其原有宽度过大 */
-.custom-area {
-  width: 120px !important; /* 使用 !important 谨慎，优先提高选择器权重 */
-  min-width: auto;
-  max-width: 120px;
-}
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body.theme-light {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            color: #0f172a;
+        }
+        body.theme-light .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+        }
+        body.theme-light .glass-input {
+            background: rgba(0, 0, 0, 0.04);
+            color: #000;
+        }
+        body.theme-light input::placeholder { color: #94a3b8; }
+        body.theme-light #engine-menu { background: #ffffff; border-color: #e2e8f0; }
+        body.theme-light #engine-menu button { color: #334155; }
+        body.theme-light #engine-menu button:hover { background: rgba(79, 70, 229, 0.08); }
+
+        body.theme-dark {
+            background: linear-gradient(135deg, #0f172a 0%, #020617 100%);
+            color: #f8fafc;
+        }
+        body.theme-dark .glass-card {
+            background: rgba(30, 41, 59, 0.45);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+        body.theme-dark .glass-input {
+            background: rgba(255, 255, 255, 0.07);
+        }
+
+        body.has-custom-bg::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.55);
+            backdrop-filter: blur(2px);
+            z-index: -1;
+        }
+
+        body, .glass-card, .glass-input, #custom-links-container {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .dragging {
+            opacity: 0.4;
+            transform: scale(0.98);
+            border: 2px dashed #6366f1 !important;
+        }
+
+        body:not(.is-admin) .admin-only {
+            display: none !important;
+        }
+
+        .nav-container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding: 1rem 1.5rem 1.5rem 1.5rem;
+        }
+        .nav-grid-wrapper {
+            flex: 1 0 auto;
+            margin-bottom: 2rem;
+        }
+        .search-wrapper {
+            flex-shrink: 0;
+            width: 100%;
+            max-width: 48rem;
+            margin: 0 auto;
+        }
+        .nav-container .max-w-7xl {
+            padding-top: 0.5rem;
+            padding-bottom: 0.5rem;
+        }
+        #main-nav-grid {
+            gap: 1.5rem;
+        }
+        .search-wrapper .glass-input {
+            border-radius: 2rem;
+        }
+        footer {
+            margin-top: 1rem;
+        }
+
+        .link-tooltip-wrapper {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            overflow: visible !important;
+        }
+        .link-tooltip-wrapper .tooltip-text {
+            visibility: hidden;
+            width: 220px;
+            background-color: #1e293b;
+            color: #f1f5f9;
+            text-align: left;
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: 1px solid #475569;
+            font-size: 12px;
+            font-weight: 400;
+            line-height: 1.4;
+            position: absolute;
+            z-index: 200;
+            bottom: calc(100% + 12px);
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.25s ease, visibility 0.25s ease;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+            pointer-events: none;
+            word-break: break-word;
+            white-space: normal;
+        }
+        .link-tooltip-wrapper .tooltip-text::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -6px;
+            border-width: 6px;
+            border-style: solid;
+            border-color: #1e293b transparent transparent transparent;
+        }
+        .link-tooltip-wrapper:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+        body.theme-light .link-tooltip-wrapper .tooltip-text {
+            background-color: #f1f5f9;
+            color: #0f172a;
+            border-color: #cbd5e1;
+        }
+        body.theme-light .link-tooltip-wrapper .tooltip-text::after {
+            border-color: #f1f5f9 transparent transparent transparent;
+        }
+
+        .edit-desc-btn {
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .group:hover .edit-desc-btn {
+            opacity: 0.6;
+        }
+        .group:hover .edit-desc-btn:hover {
+            opacity: 1;
+        }
+        .glass-card,
+        .group,
+        #custom-links-container > div {
+            overflow: visible !important;
+        }
+
+        .engine-menu-wrapper {
+            position: relative;
+            overflow: visible !important;
+        }
+        #engine-menu {
+            position: absolute;
+            left: 0;
+            bottom: calc(100% + 8px);
+            top: auto !important;
+            width: 11rem;
+            background-color: #0f172a;
+            border: 1px solid #1e293b;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+            display: none;
+            backdrop-filter: blur(12px);
+            overflow: hidden;
+            z-index: 110;
+            padding: 4px 0;
+        }
+        #engine-menu.show {
+            display: block;
+        }
+        body.theme-light #engine-menu {
+            background-color: #ffffff;
+            border-color: #e2e8f0;
+        }
+        body.theme-light #engine-menu button {
+            color: #334155;
+        }
+        body.theme-light #engine-menu button:hover {
+            background: rgba(79, 70, 229, 0.08);
+        }
+        #engine-menu button {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            padding: 8px 14px;
+            font-size: 0.875rem;
+            color: #e2e8f0;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: background 0.15s;
+            gap: 8px;
+        }
+        #engine-menu button:hover {
+            background: rgba(99, 102, 241, 0.15);
+        }
+        #engine-menu button i {
+            width: 18px;
+            text-align: center;
+        }
+        #engine-menu::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 20px;
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 8px solid #1e293b;
+        }
+        body.theme-light #engine-menu::after {
+            border-top-color: #ffffff;
+        }
+        .search-wrapper .relative,
+        .search-wrapper .glass-input,
+        .search-wrapper .flex {
+            overflow: visible !important;
+        }
+    </style>
+</head>
+<body class="theme-dark font-sans antialiased selection:bg-indigo-500 selection:text-white">
+
+    <!-- 个性化设置浮窗 -->
+    <div class="fixed top-5 right-5 z-[150] relative">
+        <button aria-label="个性化设置" onclick="toggleThemeMenu(event)" class="w-10 h-10 rounded-xl glass-card flex items-center justify-center text-slate-400 hover:text-indigo-500 hover:scale-105 active:scale-95 transition-all shadow-lg cursor-pointer" title="个性化设置">
+            <i id="theme-icon" class="fas fa-palette text-sm"></i>
+        </button>
+        <div id="theme-panel" class="absolute right-0 top-full mt-2 w-60 bg-slate-900/95 border border-slate-700/80 rounded-2xl shadow-2xl hidden backdrop-blur-md p-4 space-y-3 z-[160]" onclick="event.stopPropagation()">
+            <div class="text-[11px] font-bold text-slate-400 px-1 mb-1.5" data-i18n="langTitle">语言 / Language</div>
+            <div class="flex gap-2 mb-3 border-b border-slate-800 pb-3">
+                <button onclick="setLanguage('zh')" class="flex-1 py-1.5 rounded-lg bg-slate-800 text-slate-200 text-xs text-center hover:bg-slate-700 transition-colors cursor-pointer">中文</button>
+                <button onclick="setLanguage('en')" class="flex-1 py-1.5 rounded-lg bg-slate-800 text-slate-200 text-xs text-center hover:bg-slate-700 transition-colors cursor-pointer">English</button>
+            </div>
+
+            <div class="text-[11px] font-bold text-slate-400 px-1" data-i18n="themeTitle">基础色彩模式 (本地偏好)</div>
+            <div class="flex gap-2">
+                <button onclick="setBaseTheme('theme-light')" class="flex-1 py-1.5 rounded-lg bg-slate-800 text-slate-200 text-xs text-center hover:bg-slate-700 transition-colors cursor-pointer flex items-center justify-center gap-1"><i class="fas fa-sun text-amber-500"></i> <span data-i18n="themeLight">日间</span></button>
+                <button onclick="setBaseTheme('theme-dark')" class="flex-1 py-1.5 rounded-lg bg-slate-800 text-slate-200 text-xs text-center hover:bg-slate-700 transition-colors cursor-pointer flex items-center justify-center gap-1"><i class="fas fa-moon text-indigo-400"></i> <span data-i18n="themeDark">夜间</span></button>
+            </div>
+            
+            <div class="admin-only space-y-1.5 px-1 border-t border-slate-800 pt-3 mt-1">
+                <div class="flex justify-between items-center">
+                    <label class="text-[11px] text-slate-400 font-bold" data-i18n="bgTitle">自定义背景 (全站同步)</label>
+                    <button onclick="clearCustomBg()" id="clear-bg-btn" class="text-[10px] text-red-400 hover:underline hidden" data-i18n="clearBg">清除壁纸</button>
+                </div>
+                <div class="flex gap-1.5">
+                    <input type="text" id="custom-bg-input" data-i18n-placeholder="bgInputPlace" placeholder="输入图片网址 https://..." class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-100 focus:outline-none focus:border-indigo-500">
+                    <button onclick="applyCustomBg()" class="bg-indigo-600 text-white px-2 py-1 rounded-lg text-xs hover:bg-indigo-500 cursor-pointer shrink-0" data-i18n="applyBtn">应用</button>
+                </div>
+            </div>
+            
+            <div class="admin-only space-y-1.5 px-1 border-t border-slate-800 pt-3 mt-1">
+                <label class="text-[11px] text-slate-400 font-bold" data-i18n="pwdTitle">修改管理员密码</label>
+                <div class="flex gap-1.5">
+                    <input type="password" id="custom-pwd-input" data-i18n-placeholder="pwdInputPlace" placeholder="输入新密码" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-100 focus:outline-none focus:border-emerald-500">
+                    <button onclick="updateAdminPwd()" class="bg-emerald-600 text-white px-2 py-1 rounded-lg text-xs hover:bg-emerald-500 cursor-pointer shrink-0" data-i18n="saveBtn">保存</button>
+                </div>
+            </div>
+
+            <div class="admin-only border-t border-slate-800 pt-2 mt-2">
+                <button onclick="logoutAdmin()" class="w-full py-1.5 rounded-lg bg-red-950/40 border border-red-900/40 text-red-400 text-[11px] text-center hover:bg-red-900/40 transition-colors cursor-pointer" data-i18n="logoutBtn">退出后台管理</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主容器 -->
+    <div class="nav-container max-w-7xl mx-auto">
+        
+        <!-- 导航卡片网格 - 置顶（已移除“快捷应用”卡片） -->
+        <div class="nav-grid-wrapper w-full">
+            <div id="main-nav-grid" class="w-full grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6 relative z-10 items-start">
+
+                <!-- “快捷应用”卡片已删除 -->
+
+                <!-- 添加动态分类按钮 (管理员可见) -->
+                <div id="add-section-card" class="admin-only glass-card rounded-2xl p-5 flex flex-col items-center justify-center cursor-pointer hover:border-indigo-500/50 transition-all border-dashed border-2 border-slate-500/30 xl:col-span-3" onclick="addCustomSection()" style="min-height: 160px;">
+                    <i class="fas fa-plus text-3xl text-slate-400 mb-2"></i>
+                    <span class="text-sm font-medium text-slate-400 mt-1" data-i18n="addSectionBtn">添加自定义区域</span>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- 搜索引擎组件 - 底部 -->
+        <div class="search-wrapper w-full mb-2 relative z-[100]">
+            <form id="search-form" action="https://www.google.com/search" method="get" target="_blank" rel="noopener noreferrer" class="relative">
+                <div class="flex items-center glass-input rounded-full border border-slate-700/40 shadow-2xl focus-within:border-indigo-500/80 transition-all duration-300 px-1" style="overflow: visible !important;">
+                    <div class="engine-menu-wrapper relative pl-3" style="overflow: visible !important;">
+                        <button type="button" aria-label="切换搜索引擎" id="engine-btn" onclick="toggleEngineMenu(event)" class="flex items-center space-x-2 text-slate-400 hover:text-indigo-400 transition-colors py-3 pr-2 cursor-pointer">
+                            <i id="engine-icon" class="fab fa-google text-blue-400"></i>
+                            <i class="fas fa-chevron-down text-xs opacity-50"></i>
+                        </button>
+                        <!-- 搜索引擎菜单 -->
+                        <div id="engine-menu">
+                            <button type="button" onclick="selectEngine('google')" class="w-full text-left px-4 py-2.5 hover:bg-indigo-600/20 text-sm flex items-center space-x-2 cursor-pointer"><i class="fab fa-google text-blue-400" style="width:18px;"></i> <span>Google 搜索</span></button>
+                            <button type="button" onclick="selectEngine('baidu')" class="w-full text-left px-4 py-2.5 hover:bg-indigo-600/20 text-sm flex items-center space-x-2 cursor-pointer"><i class="fas fa-paw text-red-400" style="width:18px;"></i> <span>百度搜索</span></button>
+                            <button type="button" onclick="selectEngine('translate')" class="w-full text-left px-4 py-2.5 hover:bg-indigo-600/20 text-sm flex items-center space-x-2 cursor-pointer"><i class="fas fa-language text-emerald-400" style="width:18px;"></i> <span>谷歌翻译</span></button>
+                            <button type="button" onclick="selectEngine('yiso')" class="w-full text-left px-4 py-2.5 hover:bg-indigo-600/20 text-sm flex items-center space-x-2 cursor-pointer"><i class="fas fa-search text-cyan-400" style="width:18px;"></i> <span>易搜</span></button>
+                            <!-- 修改：只显示 "YouTube" -->
+                            <button type="button" onclick="selectEngine('youtube')" class="w-full text-left px-4 py-2.5 hover:bg-indigo-600/20 text-sm flex items-center space-x-2 cursor-pointer"><i class="fab fa-youtube text-red-500" style="width:18px;"></i> <span>YouTube</span></button>
+                            <button type="button" onclick="selectEngine('wiki')" class="w-full text-left px-4 py-2.5 hover:bg-indigo-600/20 text-sm flex items-center space-x-2 cursor-pointer"><i class="fas fa-wikipedia-w text-slate-300" style="width:18px;"></i> <span>WiKi</span></button>
+                            <button type="button" onclick="selectEngine('github')" class="w-full text-left px-4 py-2.5 hover:bg-indigo-600/20 text-sm flex items-center space-x-2 cursor-pointer"><i class="fab fa-github text-slate-400" style="width:18px;"></i> <span>GitHub</span></button>
+                        </div>
+                    </div>
+                    <input type="text" id="search-input" name="q" data-i18n-placeholder="searchGoogle" placeholder="在 Google 中搜索..." autocomplete="off" class="w-full bg-transparent border-none py-3 px-3 focus:outline-none focus:ring-0 text-base">
+                    <button type="submit" aria-label="搜索" class="mr-2 p-2 text-slate-400 hover:text-indigo-400 transition-colors">
+                        <i class="fas fa-search text-lg"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <footer id="admin-trigger" ondblclick="triggerAdminLogin()" class="text-slate-500 text-xs mt-3 cursor-pointer select-none tracking-wide hover:text-indigo-400/70 transition-colors text-center">
+            <span data-i18n="footerText">&copy; KK • 导航 · Powered by Cloudflare</span> <span id="admin-badge" class="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-400 font-bold hidden" data-i18n="adminBadge">已登入</span>
+        </footer>
+    </div>
+
+    <!-- 弹窗模态框 -->
+    <div id="modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-[300]" onclick="closeModalOnBlank(event)">
+        <div class="bg-slate-900 border border-slate-700/80 p-6 rounded-2xl w-full max-w-sm shadow-2xl text-slate-100" onclick="event.stopPropagation()">
+            <h4 id="modal-title" class="text-md font-semibold text-slate-200 mb-4 flex items-center"><i class="fas fa-link mr-2 text-indigo-400"></i><span id="modal-title-text">添加网址</span></h4>
+            <div class="space-y-4 mb-6">
+                <div>
+                    <label class="text-xs text-slate-400 block mb-1.5 font-medium" data-i18n="siteName">网站名称</label>
+                    <input type="text" id="site-name" data-i18n-placeholder="siteNamePlace" placeholder="例如：百度" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition-all">
+                </div>
+                <div>
+                    <label class="text-xs text-slate-400 block mb-1.5 font-medium" data-i18n="siteUrl">网站网址 (URL)</label>
+                    <input type="text" id="site-url" placeholder="https://zh.wikipedia.org/wiki/" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition-all">
+                </div>
+                <div>
+                    <label class="text-xs text-slate-400 block mb-1.5 font-medium" data-i18n="siteDesc">备注 / 描述 (悬浮时显示)</label>
+                    <input type="text" id="site-desc" placeholder="例如：这是一个常用的开发文档网站" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition-all">
+                </div>
+            </div>
+            <div class="flex justify-end space-x-3">
+                <button type="button" onclick="toggleModal(false)" class="px-4 py-2 bg-slate-800 text-slate-400 text-xs font-medium rounded-xl hover:bg-slate-700 transition-colors cursor-pointer" data-i18n="btnCancel">取消</button>
+                <button type="button" onclick="saveActiveLink()" class="px-4 py-2 bg-indigo-600 text-white text-xs font-medium rounded-xl hover:bg-indigo-500 transition-colors cursor-pointer shadow-lg shadow-indigo-600/20" data-i18n="btnSave">保存站点</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑备注的微型弹窗 -->
+    <div id="edit-desc-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-[400]" onclick="closeEditDescModal(event)">
+        <div class="bg-slate-900 border border-slate-700/80 p-6 rounded-2xl w-full max-w-sm shadow-2xl text-slate-100" onclick="event.stopPropagation()">
+            <h4 class="text-md font-semibold text-slate-200 mb-4 flex items-center"><i class="fas fa-pen mr-2 text-indigo-400"></i>编辑备注</h4>
+            <div class="space-y-4 mb-6">
+                <div>
+                    <label class="text-xs text-slate-400 block mb-1.5 font-medium">备注内容 (悬浮时显示)</label>
+                    <input type="text" id="edit-desc-input" placeholder="请输入备注..." class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition-all">
+                </div>
+            </div>
+            <div class="flex justify-end space-x-3">
+                <button type="button" onclick="closeEditDescModal()" class="px-4 py-2 bg-slate-800 text-slate-400 text-xs font-medium rounded-xl hover:bg-slate-700 transition-colors cursor-pointer" data-i18n="btnCancel">取消</button>
+                <button type="button" onclick="saveEditDesc()" class="px-4 py-2 bg-indigo-600 text-white text-xs font-medium rounded-xl hover:bg-indigo-500 transition-colors cursor-pointer shadow-lg shadow-indigo-600/20">保存备注</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 0. 全局状态与配置 ---
+        let currentLang = localStorage.getItem('nav_lang') || 'zh';
+        let isCustomLinksExpanded = false;
+        let expandedDynamicSections = {}; 
+        let currentModalTarget = 'custom'; 
+        let currentEngineKey = 'google';
+        let editingLinkRef = null;
+        
+        let cloudConfig = { wallpaper: "", dynamicSections: [], adminPwd: "" };
+
+        let dragType = null; 
+        let dragSecId = null; 
+        let dragLinkIdx = null;
+
+        const i18n = {
+            zh: {
+                pageTitle: "KK • 导航", langTitle: "语言 / Language", themeTitle: "基础色彩模式 (本地偏好)",
+                themeLight: "日间", themeDark: "夜间", bgTitle: "自定义背景 (全站同步)", bgInputPlace: "输入图片网址 https://...",
+                applyBtn: "应用", clearBg: "清除壁纸", logoutBtn: "退出后台管理", 
+                searchGoogle: "在 Google 中搜索...", searchBaidu: "在 百度 中搜索...", searchTranslate: "输入要翻译的文本...", searchYiso: "在 易搜 中搜索...", searchYoutube: "在 YouTube 中搜索...", searchWiki: "在 WiKi 中搜索...", searchGithub: "在 GitHub 中搜索仓库...",
+                cardCustom: "快捷应用", 
+                addCloud: "添加 (云端)", expandMore: "展开显示更多", collapseMore: "收起部分站点",
+                footerText: "&copy; KK • 导航 · Powered by Cloudflare", adminBadge: "已登录",
+                modalAddCloud: "添加云端站长推荐", modalAddFriend: "添加友情链接", siteName: "网站名称", siteNamePlace: "例如：百度", siteUrl: "网站网址 (URL)", siteDesc: "备注 / 描述 (悬浮时显示)",
+                btnCancel: "取消", btnSave: "保存站点", noCloudLinks: "暂无自定义链接", loadingCloud: "正在从云端加载...",
+                delConfirm: "确定要删除这个链接吗？", pwdPrompt: "🔐 请输入后台管理员安全密码：", pwdSuccess: "🎉 成功解锁", pwdFail: "❌ 密码错误", logoutMsg: "🔒 已安全退出管理后台，页面回归只读状态。",
+                validUrlMsg: "提示：请输入有效的网址！",
+                addSectionBtn: "添加自定义区域", promptSectionName: "请输入新区域的名称 (例如：AI工具)：", delSectionConfirm: "确定要删除整个区域及其所有链接吗？", modalAddSection: "添加到自定义区域",
+                renameSectionPrompt: "请输入新的区域名称：",
+                pwdTitle: "修改管理员密码 (全站同步)", pwdInputPlace: "输入新密码", saveBtn: "保存", pwdUpdateSuccess: "管理员密码修改成功！下次登录生效。"
+            },
+            en: {
+                pageTitle: "TechShare - Smart Responsive Nav", langTitle: "Language / 语言", themeTitle: "Color Theme (Local Pref)",
+                themeLight: "Light", themeDark: "Dark", bgTitle: "Custom Wallpaper (Cloud Sync)", bgInputPlace: "Image URL https://...",
+                applyBtn: "Apply", clearBg: "Clear Wallpaper", logoutBtn: "Logout Admin",
+                searchGoogle: "Search on Google...", searchBaidu: "Search on Baidu...", searchTranslate: "Enter text to translate...", searchYiso: "Search on Yiso...", searchYoutube: "Search on YouTube...", searchWiki: "Search on Wikipedia...", searchGithub: "Search on GitHub...",
+                cardCustom: "Webmaster Picks",
+                addCloud: "Add (Cloud)", expandMore: "Show More", collapseMore: "Collapse",
+                footerText: "&copy; 2026 TechShare Smart Nav · Powered by Cloudflare", adminBadge: "Logged In",
+                modalAddCloud: "Add Cloud Link", modalAddFriend: "Add Friend Link", siteName: "Site Name", siteNamePlace: "e.g., Google", siteUrl: "Site URL", siteDesc: "Note / Description (shown on hover)",
+                btnCancel: "Cancel", btnSave: "Save Site", noCloudLinks: "No custom links yet", loadingCloud: "Loading from cloud...",
+                delConfirm: "Are you sure you want to delete this link?", pwdPrompt: "🔐 Enter Admin Password:", pwdSuccess: "🎉 Authenticated! Admin features unlocked.", pwdFail: "❌ Incorrect password!", logoutMsg: "🔒 Logged out safely. Read-only mode activated.",
+                validUrlMsg: "Please enter a valid URL!",
+                addSectionBtn: "Add Custom Section", promptSectionName: "Enter new section name (e.g., AI Tools):", delSectionConfirm: "Are you sure you want to delete this entire section?", modalAddSection: "Add to Custom Section",
+                renameSectionPrompt: "Enter new section name:",
+                pwdTitle: "Change Admin Password (Cloud Sync)", pwdInputPlace: "Enter new password", saveBtn: "Save", pwdUpdateSuccess: "Admin password updated successfully! Valid on next login."
+            }
+        };
+
+        const dynamicLinkDict = {
+            "https://h.zcr7.xx.kg/": { zh: "PA • 导航", en: "TechShare Blog" },
+            "https://txt.zzz07.qzz.io/admin": { zh: "Zb笔记", en: "TechShare Nav" },
+            "https://y.zcr8.ddns-ip.net/Tool2.html#x10": { zh: "TOOLs", en: "IT Toutiao Blog" }
+        };
+
+        function getLocalizedLinkName(originalName, url) {
+            if (url && dynamicLinkDict[url]) return dynamicLinkDict[url][currentLang];
+            return originalName;
+        }
+        function t(key) { return i18n[currentLang][key] || key; }
+        function setLanguage(lang) {
+            currentLang = lang; localStorage.setItem('nav_lang', lang); document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+            applyLanguage(); selectEngine(currentEngineKey); document.getElementById('theme-panel').classList.add('hidden');
+        }
+        function applyLanguage() {
+            document.getElementById('page-title').innerText = t('pageTitle');
+            document.querySelectorAll('[data-i18n]').forEach(el => { el.innerHTML = t(el.getAttribute('data-i18n')); });
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { el.placeholder = t(el.getAttribute('data-i18n-placeholder')); });
+            loadCustomLinks(); renderDynamicSections();
+        }
+
+        function checkAdminSession() {
+            const isAdmin = localStorage.getItem('nav_admin_auth') === 'true';
+            if (isAdmin) { document.body.classList.add('is-admin'); document.getElementById('admin-badge').classList.remove('hidden'); } 
+            else { document.body.classList.remove('is-admin'); document.getElementById('admin-badge').classList.add('hidden'); }
+        }
+        
+        function triggerAdminLogin() {
+            if (localStorage.getItem('nav_admin_auth') === 'true') { alert(currentLang === 'zh' ? "提示：您已处于后台管理模式。" : "Notice: You are already in admin mode."); return; }
+            const pwd = prompt(t('pwdPrompt'));
+            if (pwd === null) return;
+            const currentValidPwd = cloudConfig.adminPwd || "zbb";
+            if (pwd === currentValidPwd) { 
+                localStorage.setItem('nav_admin_auth', 'true'); alert(t('pwdSuccess')); checkAdminSession(); 
+            } 
+            else { alert(t('pwdFail')); }
+        }
+        
+        function logoutAdmin() {
+            localStorage.removeItem('nav_admin_auth'); alert(t('logoutMsg'));
+            isCustomLinksExpanded = false; expandedDynamicSections = {}; checkAdminSession(); document.getElementById('theme-panel').classList.add('hidden');
+        }
+
+        async function updateAdminPwd() {
+            const newPwd = document.getElementById('custom-pwd-input').value.trim();
+            if (!newPwd) return;
+            cloudConfig.adminPwd = newPwd;
+            document.getElementById('custom-pwd-input').value = '';
+            document.getElementById('theme-panel').classList.add('hidden');
+            try { 
+                await fetch('/api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cloudConfig) }); 
+                alert(t('pwdUpdateSuccess'));
+            } catch (e) { console.error("云端密码同步失败", e); }
+        }
+
+        // --- 拖拽 ---
+        function handleDragStart(e, type, secId, linkIdx = null) {
+            e.stopPropagation(); 
+            if (localStorage.getItem('nav_admin_auth') !== 'true') { e.preventDefault(); return; }
+            dragType = type; dragSecId = secId; dragLinkIdx = linkIdx;
+            e.dataTransfer.effectAllowed = 'move';
+            const target = e.currentTarget;
+            setTimeout(() => target.classList.add('dragging'), 0);
+        }
+        function handleDragEnd(e) {
+            e.stopPropagation(); 
+            e.currentTarget.classList.remove('dragging');
+            document.querySelectorAll('.dynamic-section-card, .group').forEach(el => el.style.border = '');
+        }
+        function handleDragOver(e, type) { 
+            e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect = 'move'; return false; 
+        }
+        function handleDrop(e, type, targetSecId, targetLinkIdx = null) {
+            e.stopPropagation(); e.preventDefault();
+            if (localStorage.getItem('nav_admin_auth') !== 'true') return;
+            let secs = cloudConfig.dynamicSections || [];
+            if (dragType === 'section' && type === 'section') {
+                if (dragSecId === targetSecId) return;
+                const fromIdx = secs.findIndex(s => s.id === dragSecId);
+                const toIdx = secs.findIndex(s => s.id === targetSecId);
+                if(fromIdx > -1 && toIdx > -1) {
+                    const [moved] = secs.splice(fromIdx, 1);
+                    secs.splice(toIdx, 0, moved);
+                }
+            } 
+            else if (dragType === 'link' && type === 'link') {
+                if (dragSecId === targetSecId && dragLinkIdx === targetLinkIdx) return;
+                const fromSec = secs.find(s => s.id === dragSecId);
+                const toSec = secs.find(s => s.id === targetSecId);
+                if (fromSec && toSec) {
+                    let actualTargetIdx = targetLinkIdx;
+                    const [movedLink] = fromSec.links.splice(dragLinkIdx, 1);
+                    toSec.links.splice(actualTargetIdx, 0, movedLink);
+                }
+            } 
+            else if (dragType === 'link' && type === 'section') {
+                 const fromSec = secs.find(s => s.id === dragSecId);
+                 const toSec = secs.find(s => s.id === targetSecId);
+                 if (fromSec && toSec) {
+                     if (fromSec === toSec) return; 
+                     const [movedLink] = fromSec.links.splice(dragLinkIdx, 1);
+                     toSec.links.push(movedLink);
+                 }
+            }
+            saveDynamicSections(secs);
+        }
+
+        // --- 云端调度 ---
+        async function initCloudData() {
+            const savedTheme = localStorage.getItem('nav_theme_mode') || 'theme-dark';
+            document.body.classList.remove('theme-light', 'theme-dark'); document.body.classList.add(savedTheme);
+            const globalDefaultBg = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop"; 
+            let savedBg = localStorage.getItem('nav_custom_wallpaper');
+            cloudConfig.dynamicSections = JSON.parse(localStorage.getItem('nav_dynamic_sections') || '[]');
+            try {
+                const res = await fetch('/api/config');
+                if (res.ok) {
+                    const configData = await res.json();
+                    if (configData) {
+                        if (configData.wallpaper !== undefined) {
+                            if (configData.wallpaper === "") { savedBg = null; localStorage.removeItem('nav_custom_wallpaper'); document.body.classList.add('bg-cleared'); } 
+                            else { savedBg = configData.wallpaper; localStorage.setItem('nav_custom_wallpaper', savedBg); document.body.classList.remove('bg-cleared'); }
+                        }
+                        if (configData.dynamicSections) { cloudConfig.dynamicSections = configData.dynamicSections; localStorage.setItem('nav_dynamic_sections', JSON.stringify(cloudConfig.dynamicSections)); }
+                        if (configData.adminPwd) { cloudConfig.adminPwd = configData.adminPwd; }
+                    }
+                }
+            } catch (e) {}
+            if (!savedBg && !document.body.classList.contains('bg-cleared')) savedBg = globalDefaultBg; 
+            if (savedBg) { applyWallpaperStyles(savedBg); document.getElementById('custom-bg-input').value = savedBg; document.getElementById('clear-bg-btn').classList.remove('hidden'); }
+            renderDynamicSections();
+        }
+
+        async function updateCloudConfig(key, value) {
+            cloudConfig[key] = value;
+            try { await fetch('/api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cloudConfig) }); } catch (e) { }
+        }
+
+        function toggleThemeMenu(e) { e.stopPropagation(); document.getElementById('theme-panel').classList.toggle('hidden'); }
+        function setBaseTheme(themeName) { document.body.classList.remove('theme-light', 'theme-dark'); document.body.classList.add(themeName); localStorage.setItem('nav_theme_mode', themeName); document.getElementById('theme-panel').classList.add('hidden'); }
+        function applyWallpaperStyles(url) { document.body.style.backgroundImage = `url('${url}')`; document.body.style.backgroundPosition = 'center'; document.body.style.backgroundSize = 'cover'; document.body.style.backgroundRepeat = 'no-repeat'; document.body.style.backgroundAttachment = 'fixed'; document.body.classList.add('has-custom-bg'); }
+
+        async function applyCustomBg() {
+            const url = document.getElementById('custom-bg-input').value.trim();
+            if (!url) return alert(t('validUrlMsg'));
+            applyWallpaperStyles(url); localStorage.setItem('nav_custom_wallpaper', url); document.body.classList.remove('bg-cleared'); document.getElementById('clear-bg-btn').classList.remove('hidden'); document.getElementById('theme-panel').classList.add('hidden');
+            updateCloudConfig('wallpaper', url);
+        }
+
+        async function clearCustomBg() {
+            document.body.style.backgroundImage = ''; document.body.classList.remove('has-custom-bg'); localStorage.removeItem('nav_custom_wallpaper'); document.body.classList.add('bg-cleared'); document.getElementById('custom-bg-input').value = ''; document.getElementById('clear-bg-btn').classList.add('hidden'); document.getElementById('theme-panel').classList.add('hidden');
+            updateCloudConfig('wallpaper', "");
+        }
+
+        function extractDomainFromUrl(url) {
+            try {
+                const urlObj = new URL(url);
+                return urlObj.hostname.replace(/^www\./, '');
+            } catch {
+                return '';
+            }
+        }
+
+        // --- 动态区域 ---
+        function saveDynamicSections(sections) {
+            localStorage.setItem('nav_dynamic_sections', JSON.stringify(sections));
+            updateCloudConfig('dynamicSections', sections);
+            renderDynamicSections();
+        }
+
+        function addCustomSection() {
+            const title = prompt(t('promptSectionName'));
+            if (!title || title.trim() === '') return;
+            let secs = cloudConfig.dynamicSections || [];
+            secs.push({ id: Date.now().toString(), title: title.trim(), links: [] });
+            saveDynamicSections(secs);
+        }
+
+        function renameCustomSection(id) {
+            let secs = cloudConfig.dynamicSections || [];
+            const sec = secs.find(s => s.id === id);
+            if(!sec) return;
+            const newTitle = prompt(t('renameSectionPrompt'), sec.title);
+            if(!newTitle || newTitle.trim() === '' || newTitle === sec.title) return;
+            sec.title = newTitle.trim();
+            saveDynamicSections(secs);
+        }
+
+        function deleteCustomSection(id) {
+            if(!confirm(t('delSectionConfirm'))) return;
+            let secs = cloudConfig.dynamicSections || [];
+            secs = secs.filter(s => s.id !== id);
+            saveDynamicSections(secs);
+        }
+
+        function toggleDynamicSectionExpand(secId) {
+            expandedDynamicSections[secId] = !expandedDynamicSections[secId];
+            renderDynamicSections();
+        }
+
+        function openEditDescModal(source, secId, index) {
+            editingLinkRef = { source, secId, index };
+            let currentDesc = '';
+            if (source === 'custom') {
+                const links = JSON.parse(localStorage.getItem('nav_custom_links') || '[]');
+                if (links[index]) currentDesc = links[index].desc || '';
+            } else if (source === 'section') {
+                const secs = cloudConfig.dynamicSections || [];
+                const sec = secs.find(s => s.id === secId);
+                if (sec && sec.links[index]) currentDesc = sec.links[index].desc || '';
+            }
+            document.getElementById('edit-desc-input').value = currentDesc;
+            document.getElementById('edit-desc-modal').classList.remove('hidden');
+        }
+
+        function closeEditDescModal(e) {
+            if (e && e.target && e.target.id !== 'edit-desc-modal') return;
+            document.getElementById('edit-desc-modal').classList.add('hidden');
+            editingLinkRef = null;
+        }
+
+        function saveEditDesc() {
+            if (!editingLinkRef) return;
+            const newDesc = document.getElementById('edit-desc-input').value.trim();
+            const { source, secId, index } = editingLinkRef;
+            
+            if (source === 'custom') {
+                let links = JSON.parse(localStorage.getItem('nav_custom_links') || '[]');
+                if (links[index]) {
+                    links[index].desc = newDesc;
+                    localStorage.setItem('nav_custom_links', JSON.stringify(links));
+                    fetch('/api/links', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(links) }).catch(() => {});
+                    loadCustomLinks();
+                }
+            } else if (source === 'section') {
+                let secs = cloudConfig.dynamicSections || [];
+                const sec = secs.find(s => s.id === secId);
+                if (sec && sec.links[index]) {
+                    sec.links[index].desc = newDesc;
+                    saveDynamicSections(secs);
+                }
+            }
+            closeEditDescModal();
+        }
+
+        function renderDynamicSections() {
+            document.querySelectorAll('.dynamic-section-card').forEach(el => el.remove());
+            const grid = document.getElementById('main-nav-grid');
+            const addBtnCard = document.getElementById('add-section-card');
+            let secs = cloudConfig.dynamicSections || [];
+
+            secs.forEach((sec) => {
+                const isExpanded = !!expandedDynamicSections[sec.id];
+                const linkCount = sec.links.length;
+                const isCompact = linkCount > 6;
+
+                let gridCols = isCompact ? 'grid-cols-3 gap-2' : 'grid-cols-2 gap-3';
+                let visibleLinks = sec.links;
+                let showExpandBtn = false;
+
+                if (linkCount > 9) {
+                    showExpandBtn = true;
+                    if (!isExpanded) {
+                        visibleLinks = sec.links.slice(0, 9);
+                    }
+                }
+
+                const card = document.createElement('div');
+                card.className = "dynamic-section-card glass-card rounded-2xl p-5 shadow-xl hover:border-indigo-500/30 transition-all duration-300 relative xl:col-span-1";
+                card.id = `section-${sec.id}`;
+                card.draggable = true;
+                card.ondragstart = (e) => handleDragStart(e, 'section', sec.id);
+                card.ondragend = handleDragEnd;
+                card.ondragover = (e) => handleDragOver(e, 'section');
+                card.ondrop = (e) => handleDrop(e, 'section', sec.id);
+
+                let linksHtml = '';
+                if (linkCount === 0) {
+                    linksHtml = `<div class="col-span-full text-center text-xs text-slate-400/60 py-4">${t('noCloudLinks')}</div>`;
+                } else {
+                    const pClass = isCompact ? 'p-2' : 'p-3';
+                    const spaceXClass = isCompact ? 'space-x-1.5' : 'space-x-2.5';
+                    const iconSizeClass = isCompact ? 'w-4 h-4 text-[9px]' : 'w-5 h-5 text-[10px]';
+                    const imgSizeClass = isCompact ? 'w-4 h-4' : 'w-5 h-5';
+                    const textSizeClass = isCompact ? 'text-[11px]' : 'text-sm';
+                    const prClass = isCompact ? 'pr-4' : 'pr-5';
+                    const dragMrClass = isCompact ? 'mr-1.5' : 'mr-2.5';
+                    const btnClass = isCompact ? 'right-1 text-[10px] px-1 py-0.5' : 'right-2 text-xs p-1';
+
+                    visibleLinks.forEach((link, idx) => {
+                        const displayName = getLocalizedLinkName(link.name, link.url);
+                        let description = link.desc || '';
+                        if (!description && link.url) {
+                            description = extractDomainFromUrl(link.url);
+                            link.desc = description;
+                        }
+                        let displayIcon = `<div class="${iconSizeClass} rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold shrink-0">${displayName.charAt(0).toUpperCase()}</div>`;
+                        try { if(link.url) displayIcon = `<img src="https://unavatar.io/duckduckgo/${new URL(link.url).hostname}" draggable="false" onerror="this.style.display='none'" class="${imgSizeClass} rounded object-contain shrink-0" alt="icon" />`; } catch(e){}
+
+                        linksHtml += `
+                        <div class="group relative flex items-center justify-between ${pClass} bg-slate-500/5 border border-slate-500/10 rounded-xl hover:bg-indigo-600/10 transition-all" style="overflow: visible !important;">
+                            <div class="flex items-center w-full overflow-visible">
+                                <i class="fas fa-grip-vertical text-slate-500 opacity-0 group-hover:opacity-50 transition-opacity ${dragMrClass} cursor-move admin-only text-[10px] shrink-0"></i>
+                                <div class="link-tooltip-wrapper flex items-center ${spaceXClass} truncate w-full ${prClass}" style="overflow: visible !important;">
+                                    <a href="${link.url}" draggable="false" target="_blank" rel="noopener noreferrer" class="flex items-center ${spaceXClass} truncate">
+                                        ${displayIcon} <span class="${textSizeClass} font-medium truncate">${displayName}</span>
+                                    </a>
+                                    ${description ? `<span class="tooltip-text">${description}</span>` : ''}
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-1 shrink-0">
+                                <button type="button" onclick="openEditDescModal('section', '${sec.id}', ${idx})" class="admin-only edit-desc-btn text-[10px] text-slate-400 hover:text-indigo-400 transition-opacity" title="编辑备注"><i class="fas fa-pen"></i></button>
+                                <button type="button" onclick="deleteSectionLink(event, '${sec.id}', ${idx})" class="admin-only ${btnClass} text-slate-400 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-500/20 rounded cursor-pointer shrink-0"><i class="fas fa-trash-alt"></i></button>
+                            </div>
+                        </div>`;
+                    });
+                }
+
+                let expandHtml = '';
+                if (showExpandBtn) {
+                    const btnText = isExpanded
+                        ? `<span data-i18n="collapseMore">${t('collapseMore')}</span> <i class="fas fa-chevron-up text-[10px]"></i>`
+                        : `<span data-i18n="expandMore">${t('expandMore')}</span> (${linkCount - 9}) <i class="fas fa-chevron-down text-[10px]"></i>`;
+                    expandHtml = `
+                        <div class="mt-3 pt-2 border-t border-slate-500/10 text-center">
+                            <button type="button" onclick="toggleDynamicSectionExpand('${sec.id}')" class="text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer inline-flex items-center gap-1">
+                                ${btnText}
+                            </button>
+                        </div>
+                    `;
+                }
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="text-lg font-semibold text-indigo-400 flex items-center cursor-move" title="长按拖拽排序" style="cursor: grab;">
+                            <i class="fas fa-grip-vertical mr-2 text-slate-500 opacity-60 admin-only text-sm"></i>
+                            <i class="fas fa-layer-group mr-2.5"></i> <span>${sec.title}</span>
+                        </h3>
+                        <div class="flex gap-1.5 shrink-0 ml-2">
+                            <button type="button" onclick="openLinkModal('section_${sec.id}')" class="admin-only text-[10px] px-2 py-1 bg-indigo-600/20 text-indigo-400 border border-indigo-500/20 rounded-md hover:bg-indigo-600/40 transition-colors cursor-pointer z-[50]">${t('addCloud')}</button>
+                            <button type="button" onclick="renameCustomSection('${sec.id}')" class="admin-only text-[10px] px-2 py-1 bg-sky-600/20 text-sky-400 border border-sky-500/20 rounded-md hover:bg-sky-600/40 transition-colors cursor-pointer z-[50]"><i class="fas fa-pen"></i></button>
+                            <button type="button" onclick="deleteCustomSection('${sec.id}')" class="admin-only text-[10px] px-2 py-1 bg-red-600/20 text-red-400 border border-red-500/20 rounded-md hover:bg-red-600/40 transition-colors cursor-pointer z-[50]"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="grid ${gridCols}" style="min-height: 40px; overflow: visible !important;" ondragover="handleDragOver(event, 'section')" ondrop="handleDrop(event, 'section', '${sec.id}')">
+                        ${linksHtml}
+                    </div>
+                    ${expandHtml}
+                `;
+                grid.insertBefore(card, addBtnCard);
+            });
+            checkAdminSession();
+        }
+
+        function deleteSectionLink(e, secId, linkIdx) {
+            e.preventDefault(); e.stopPropagation();
+            let secs = cloudConfig.dynamicSections || [];
+            const sec = secs.find(s => s.id === secId);
+            if(sec) { sec.links.splice(linkIdx, 1); saveDynamicSections(secs); }
+        }
+
+        // --- 搜索引擎配置 ---
+        const engines = { 
+            google: { action: 'https://www.google.com/search', name: 'q', placeholderKey: 'searchGoogle', icon: 'fab fa-google text-blue-400' },
+            baidu: { action: 'https://www.baidu.com/s', name: 'wd', placeholderKey: 'searchBaidu', icon: 'fas fa-paw text-red-400' },
+            translate: { action: 'https://translate.google.com/', name: 'text', placeholderKey: 'searchTranslate', icon: 'fas fa-language text-emerald-400', 
+                          buildUrl: (query) => `https://translate.google.com/?hl=zh-cn&sl=auto&tl=zh-CN&text=${encodeURIComponent(query)}` },
+            yiso: { action: 'https://yiso.fun/info', name: 'searchKey', placeholderKey: 'searchYiso', icon: 'fas fa-search text-cyan-400' },
+            youtube: { action: 'https://www.youtube.com/results', name: 'search_query', placeholderKey: 'searchYoutube', icon: 'fab fa-youtube text-red-500' },
+            wiki: { action: 'https://zh.wikipedia.org/w/index.php', name: 'search', placeholderKey: 'searchWiki', icon: 'fas fa-wikipedia-w text-slate-300' },
+            github: { action: 'https://github.com/search', name: 'q', placeholderKey: 'searchGithub', icon: 'fab fa-github text-slate-400' }
+        };
+        
+        function toggleEngineMenu(e) { 
+            e.stopPropagation(); 
+            const menu = document.getElementById('engine-menu');
+            menu.classList.toggle('show');
+        }
+        
+        function selectEngine(key) { 
+            currentEngineKey = key; 
+            const form = document.getElementById('search-form'); 
+            const input = document.getElementById('search-input'); 
+            const icon = document.getElementById('engine-icon'); 
+            const engine = engines[key];
+            if (key === 'translate') {
+                form.onsubmit = function(e) {
+                    e.preventDefault();
+                    const query = input.value.trim();
+                    if (query) {
+                        window.open(engine.buildUrl(query), '_blank');
+                    }
+                    return false;
+                };
+                form.action = '#';
+            } else {
+                form.onsubmit = null;
+                form.action = engine.action;
+                input.name = engine.name;
+            }
+            input.setAttribute('data-i18n-placeholder', engine.placeholderKey);
+            input.placeholder = t(engine.placeholderKey);
+            icon.className = engine.icon;
+            document.getElementById('engine-menu').classList.remove('show');
+        }
+
+        // --- 链接管理 ---
+        function openLinkModal(target) { 
+            currentModalTarget = target; 
+            const textEl = document.getElementById('modal-title-text'); 
+            if(target === 'friend') textEl.innerText = t('modalAddFriend'); 
+            else if(target === 'custom') textEl.innerText = t('modalAddCloud'); 
+            else textEl.innerText = t('modalAddSection'); 
+            document.getElementById('site-name').value = ''; 
+            document.getElementById('site-url').value = ''; 
+            document.getElementById('site-desc').value = ''; 
+            toggleModal(true); 
+        }
+        function toggleModal(show) { const modal = document.getElementById('modal'); if (show) { modal.classList.remove('hidden'); } else { modal.classList.add('hidden'); } }
+        function closeModalOnBlank(e) { if(e.target.id === 'modal') toggleModal(false); }
+
+        async function saveActiveLink() {
+            const name = document.getElementById('site-name').value.trim(); 
+            let url = document.getElementById('site-url').value.trim();
+            const desc = document.getElementById('site-desc').value.trim();
+            if(!name || !url) return alert(currentLang === 'zh' ? '请完整填写名称和网址！' : 'Please fill in both name and URL!');
+            if(!/^https?:\/\//i.test(url)) url = 'https://' + url;
+
+            const newLink = { name, url, desc };
+
+            if (currentModalTarget.startsWith('section_')) {
+                const secId = currentModalTarget.replace('section_', ''); 
+                let secs = cloudConfig.dynamicSections || []; 
+                const sec = secs.find(s => s.id === secId);
+                if(sec) { sec.links.push(newLink); saveDynamicSections(secs); }
+            } else if(currentModalTarget === 'friend') {
+                // friend 已移除
+            } else {
+                try { 
+                    const res = await fetch('/api/links'); 
+                    let links = res.ok ? await res.json() : JSON.parse(localStorage.getItem('nav_custom_links') || '[]'); 
+                    links.push(newLink); 
+                    await fetch('/api/links', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(links) }); 
+                    localStorage.setItem('nav_custom_links', JSON.stringify(links)); 
+                    loadCustomLinks(); 
+                } 
+                catch (error) { 
+                    const links = JSON.parse(localStorage.getItem('nav_custom_links') || '[]'); 
+                    links.push(newLink); 
+                    localStorage.setItem('nav_custom_links', JSON.stringify(links)); 
+                    loadCustomLinks(); 
+                }
+            } 
+            toggleModal(false);
+        }
+
+        async function loadCustomLinks() {
+            const container = document.getElementById('custom-links-container'); const actionWrapper = document.getElementById('expand-action-wrapper');
+            container.innerHTML = `<div class="col-span-full text-center text-xs text-slate-400/60 py-10"><i class="fas fa-spinner fa-spin"></i> ${t('loadingCloud')}</div>`;
+            let links = []; try { const res = await fetch('/api/links'); if(res.ok) links = await res.json(); else throw new Error(); } catch(e) { links = JSON.parse(localStorage.getItem('nav_custom_links') || '[]'); }
+            
+            links = links.map(link => {
+                if (!link.desc && link.url) {
+                    link.desc = extractDomainFromUrl(link.url);
+                }
+                return link;
+            });
+            localStorage.setItem('nav_custom_links', JSON.stringify(links));
+            fetch('/api/links', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(links) }).catch(() => {});
+            
+            container.innerHTML = '';
+            
+            if(links.length === 0) { 
+                container.innerHTML = `<div class="col-span-full text-center text-xs text-slate-400/60 py-10">${t('noCloudLinks')}</div>`; 
+                actionWrapper.classList.add('hidden'); 
+                container.className = 'grid grid-cols-2 gap-3';
+                return; 
+            }
+
+            const isCompact = links.length > 6;
+            container.className = isCompact ? 'grid grid-cols-3 gap-2' : 'grid grid-cols-2 gap-3';
+
+            let visibleLinks = links;
+            let showExpandBtn = false;
+            if (links.length > 9) { showExpandBtn = true; if (!isCustomLinksExpanded) visibleLinks = links.slice(0, 9); }
+
+            const pClass = isCompact ? 'p-2' : 'p-3'; const spaceXClass = isCompact ? 'space-x-1.5' : 'space-x-2.5';
+            const iconSizeClass = isCompact ? 'w-4 h-4 text-[9px]' : 'w-5 h-5 text-[10px]'; const imgSizeClass = isCompact ? 'w-4 h-4' : 'w-5 h-5';
+            const textSizeClass = isCompact ? 'text-[11px]' : 'text-sm'; const prClass = isCompact ? 'pr-4' : 'pr-5'; const btnClass = isCompact ? 'right-1 text-[10px] px-1 py-0.5' : 'right-2 text-xs p-1';
+
+            visibleLinks.forEach((item, index) => {
+                const displayName = getLocalizedLinkName(item.name, item.url);
+                const description = item.desc || '';
+                let displayIcon = `<div class="${iconSizeClass} rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold shrink-0">${displayName.charAt(0).toUpperCase()}</div>`;
+                try { if(item.url) displayIcon = `<img src="https://unavatar.io/duckduckgo/${new URL(item.url).hostname}" draggable="false" onerror="this.style.display='none'" class="${imgSizeClass} rounded object-contain shrink-0" alt="icon" />`; } catch(err){}
+                
+                container.innerHTML += `
+                    <div class="group relative flex items-center justify-between ${pClass} bg-slate-500/5 border border-slate-500/10 rounded-xl hover:bg-indigo-600/10 transition-all" style="overflow: visible !important;">
+                        <div class="flex items-center w-full overflow-visible">
+                            <div class="link-tooltip-wrapper flex items-center ${spaceXClass} truncate w-full ${prClass}" style="overflow: visible !important;">
+                                <a href="${item.url}" draggable="false" target="_blank" rel="noopener noreferrer" class="flex items-center ${spaceXClass} truncate">
+                                    ${displayIcon} <span class="${textSizeClass} font-medium truncate">${displayName}</span>
+                                </a>
+                                ${description ? `<span class="tooltip-text">${description}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1 shrink-0">
+                            <button type="button" onclick="openEditDescModal('custom', null, ${index})" class="admin-only edit-desc-btn text-[10px] text-slate-400 hover:text-indigo-400 transition-opacity" title="编辑备注"><i class="fas fa-pen"></i></button>
+                            <button type="button" onclick="deleteCustomLink(event, ${index})" class="admin-only ${btnClass} text-slate-400 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-500/20 rounded cursor-pointer shrink-0"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    </div>`;
+            });
+
+            if (showExpandBtn) { 
+                actionWrapper.classList.remove('hidden'); const btn = document.getElementById('expand-btn'); 
+                btn.innerHTML = isCustomLinksExpanded ? `<span data-i18n="collapseMore">${t('collapseMore')}</span> <i class="fas fa-chevron-up text-[10px]"></i>` : `<span data-i18n="expandMore">${t('expandMore')}</span> (${links.length - 9}) <i class="fas fa-chevron-down text-[10px]"></i>`; 
+            } else { actionWrapper.classList.add('hidden'); }
+        }
+
+        function toggleExpandCustomLinks() { isCustomLinksExpanded = !isCustomLinksExpanded; loadCustomLinks(); }
+        async function deleteCustomLink(e, index) { e.preventDefault(); e.stopPropagation(); if(!confirm(t('delConfirm'))) return; try { const res = await fetch('/api/links'); let links = res.ok ? await res.json() : JSON.parse(localStorage.getItem('nav_custom_links') || '[]'); links.splice(index, 1); await fetch('/api/links', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(links) }); localStorage.setItem('nav_custom_links', JSON.stringify(links)); if(links.length <= 9) isCustomLinksExpanded = false; loadCustomLinks(); } catch(error) { const links = JSON.parse(localStorage.getItem('nav_custom_links') || '[]'); links.splice(index, 1); localStorage.setItem('nav_custom_links', JSON.stringify(links)); if(links.length <= 9) isCustomLinksExpanded = false; loadCustomLinks(); } }
+
+        // --- 初始化 ---
+        document.addEventListener('click', function(e) {
+            const menu = document.getElementById('engine-menu');
+            const btn = document.getElementById('engine-btn');
+            if (menu && !menu.contains(e.target) && !btn.contains(e.target)) {
+                menu.classList.remove('show');
+            }
+            document.getElementById('theme-panel').classList.add('hidden');
+        });
+        checkAdminSession(); document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en'; applyLanguage(); initCloudData();
+    </script>
+</body>
+</html>
