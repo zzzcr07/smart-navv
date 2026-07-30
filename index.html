@@ -115,11 +115,11 @@
             margin-top: 1rem;
         }
 
-        /* 网址悬浮提示框 (Tooltip) 样式 */
+        /* 网址悬浮提示框 (Tooltip) 样式 - 修正鼠标指针为默认 */
         .link-tooltip {
             position: relative;
             display: inline-block;
-            cursor: help;
+            /* 移除 cursor: help，使用默认指针 */
         }
         .link-tooltip .tooltip-text {
             visibility: hidden;
@@ -236,7 +236,7 @@
                     </div>
                 </div>
 
-                <!-- 添加动态分类按钮 (管理员可见) - 已恢复 -->
+                <!-- 添加动态分类按钮 (管理员可见) -->
                 <div id="add-section-card" class="admin-only glass-card rounded-2xl p-5 flex flex-col items-center justify-center cursor-pointer hover:border-indigo-500/50 transition-all border-dashed border-2 border-slate-500/30 xl:col-span-1" onclick="addCustomSection()" style="min-height: 160px;">
                     <i class="fas fa-plus text-3xl text-slate-400 mb-2"></i>
                     <span class="text-sm font-medium text-slate-400 mt-1" data-i18n="addSectionBtn">添加自定义区域</span>
