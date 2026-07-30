@@ -104,7 +104,6 @@
             margin-top: 1rem;
         }
 
-        /* Tooltip 样式 */
         .link-tooltip-wrapper {
             position: relative;
             display: inline-flex;
@@ -174,7 +173,6 @@
             overflow: visible !important;
         }
 
-        /* ===== 搜索引擎菜单 - 向上展开（修复版） ===== */
         .engine-menu-wrapper {
             position: relative;
             overflow: visible !important;
@@ -228,7 +226,6 @@
             width: 18px;
             text-align: center;
         }
-        /* 小三角指示器 */
         #engine-menu::after {
             content: '';
             position: absolute;
@@ -243,7 +240,6 @@
         body.theme-light #engine-menu::after {
             border-top-color: #ffffff;
         }
-        /* 确保菜单容器不被裁剪 */
         .search-wrapper .relative,
         .search-wrapper .glass-input,
         .search-wrapper .flex {
@@ -316,7 +312,6 @@
                     </div>
                 </div>
 
-                <!-- 添加动态分类按钮 (管理员可见) -->
                 <div id="add-section-card" class="admin-only glass-card rounded-2xl p-5 flex flex-col items-center justify-center cursor-pointer hover:border-indigo-500/50 transition-all border-dashed border-2 border-slate-500/30 xl:col-span-1" onclick="addCustomSection()" style="min-height: 160px;">
                     <i class="fas fa-plus text-3xl text-slate-400 mb-2"></i>
                     <span class="text-sm font-medium text-slate-400 mt-1" data-i18n="addSectionBtn">添加自定义区域</span>
@@ -340,7 +335,7 @@
                             <button type="button" onclick="selectEngine('baidu')" class="w-full text-left px-4 py-2.5 hover:bg-indigo-600/20 text-sm flex items-center space-x-2 cursor-pointer"><i class="fas fa-paw text-red-400" style="width:18px;"></i> <span>百度搜索</span></button>
                             <button type="button" onclick="selectEngine('translate')" class="w-full text-left px-4 py-2.5 hover:bg-indigo-600/20 text-sm flex items-center space-x-2 cursor-pointer"><i class="fas fa-language text-emerald-400" style="width:18px;"></i> <span>谷歌翻译</span></button>
                             <button type="button" onclick="selectEngine('yiso')" class="w-full text-left px-4 py-2.5 hover:bg-indigo-600/20 text-sm flex items-center space-x-2 cursor-pointer"><i class="fas fa-search text-cyan-400" style="width:18px;"></i> <span>易搜</span></button>
-                            <button type="button" onclick="selectEngine('bing')" class="w-full text-left px-4 py-2.5 hover:bg-indigo-600/20 text-sm flex items-center space-x-2 cursor-pointer"><i class="fab fa-microsoft text-teal-400" style="width:18px;"></i> <span>油管</span></button>
+                            <button type="button" onclick="selectEngine('youtube')" class="w-full text-left px-4 py-2.5 hover:bg-indigo-600/20 text-sm flex items-center space-x-2 cursor-pointer"><i class="fab fa-youtube text-red-500" style="width:18px;"></i> <span>油管 (YouTube)</span></button>
                             <button type="button" onclick="selectEngine('wiki')" class="w-full text-left px-4 py-2.5 hover:bg-indigo-600/20 text-sm flex items-center space-x-2 cursor-pointer"><i class="fas fa-wikipedia-w text-slate-300" style="width:18px;"></i> <span>WiKi</span></button>
                             <button type="button" onclick="selectEngine('github')" class="w-full text-left px-4 py-2.5 hover:bg-indigo-600/20 text-sm flex items-center space-x-2 cursor-pointer"><i class="fab fa-github text-slate-400" style="width:18px;"></i> <span>GitHub</span></button>
                         </div>
@@ -420,7 +415,7 @@
                 pageTitle: "KK • 导航", langTitle: "语言 / Language", themeTitle: "基础色彩模式 (本地偏好)",
                 themeLight: "日间", themeDark: "夜间", bgTitle: "自定义背景 (全站同步)", bgInputPlace: "输入图片网址 https://...",
                 applyBtn: "应用", clearBg: "清除壁纸", logoutBtn: "退出后台管理", 
-                searchGoogle: "在 Google 中搜索...", searchBaidu: "在 百度 中搜索...", searchTranslate: "输入要翻译的文本...", searchYiso: "在 易搜 中搜索...", searchBing: "在 油管 中搜索...", searchWiki: "在 WiKi 中搜索...", searchGithub: "在 GitHub 中搜索仓库...",
+                searchGoogle: "在 Google 中搜索...", searchBaidu: "在 百度 中搜索...", searchTranslate: "输入要翻译的文本...", searchYiso: "在 易搜 中搜索...", searchYoutube: "在 YouTube 中搜索...", searchWiki: "在 WiKi 中搜索...", searchGithub: "在 GitHub 中搜索仓库...",
                 cardCustom: "快捷应用", 
                 addCloud: "添加 (云端)", expandMore: "展开显示更多", collapseMore: "收起部分站点",
                 footerText: "&copy; KK • 导航 · Powered by Cloudflare", adminBadge: "已登录",
@@ -436,7 +431,7 @@
                 pageTitle: "TechShare - Smart Responsive Nav", langTitle: "Language / 语言", themeTitle: "Color Theme (Local Pref)",
                 themeLight: "Light", themeDark: "Dark", bgTitle: "Custom Wallpaper (Cloud Sync)", bgInputPlace: "Image URL https://...",
                 applyBtn: "Apply", clearBg: "Clear Wallpaper", logoutBtn: "Logout Admin",
-                searchGoogle: "Search on Google...", searchBaidu: "Search on Baidu...", searchTranslate: "Enter text to translate...", searchYiso: "Search on Yiso...", searchBing: "Search on Bing...", searchWiki: "Search on Wikipedia...", searchGithub: "Search on GitHub...",
+                searchGoogle: "Search on Google...", searchBaidu: "Search on Baidu...", searchTranslate: "Enter text to translate...", searchYiso: "Search on Yiso...", searchYoutube: "Search on YouTube...", searchWiki: "Search on Wikipedia...", searchGithub: "Search on GitHub...",
                 cardCustom: "Webmaster Picks",
                 addCloud: "Add (Cloud)", expandMore: "Show More", collapseMore: "Collapse",
                 footerText: "&copy; 2026 TechShare Smart Nav · Powered by Cloudflare", adminBadge: "Logged In",
@@ -773,7 +768,7 @@
                 if (showExpandBtn) {
                     const btnText = isExpanded
                         ? `<span data-i18n="collapseMore">${t('collapseMore')}</span> <i class="fas fa-chevron-up text-[10px]"></i>`
-                        : `<span data-i18n="expandMore">${t('expandMore')}</span> (${linkCount - 9}) <i class="fas fa-chevron-down text-[10px]"></i>`;
+                        : `<span data-i18n="expandMore">${t('expandMore')}</span> (${linkCount - 9}) <i class="fas fa-chevron-down text-[10px]</i>`;
                     expandHtml = `
                         <div class="mt-3 pt-2 border-t border-slate-500/10 text-center">
                             <button type="button" onclick="toggleDynamicSectionExpand('${sec.id}')" class="text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer inline-flex items-center gap-1">
@@ -812,19 +807,18 @@
             if(sec) { sec.links.splice(linkIdx, 1); saveDynamicSections(secs); }
         }
 
-        // --- 搜索引擎 ---
+        // --- 搜索引擎配置（修复版） ---
         const engines = { 
             google: { action: 'https://www.google.com/search', name: 'q', placeholderKey: 'searchGoogle', icon: 'fab fa-google text-blue-400' },
             baidu: { action: 'https://www.baidu.com/s', name: 'wd', placeholderKey: 'searchBaidu', icon: 'fas fa-paw text-red-400' },
             translate: { action: 'https://translate.google.com/', name: 'text', placeholderKey: 'searchTranslate', icon: 'fas fa-language text-emerald-400', 
                           buildUrl: (query) => `https://translate.google.com/?hl=zh-cn&sl=auto&tl=zh-CN&text=${encodeURIComponent(query)}` },
-            yiso: { action: 'https://yiso.fun/info?searchKey=', name: 'q', placeholderKey: 'searchYiso', icon: 'fas fa-search text-cyan-400' },
-            bing: { action: 'https://cn.bing.com/search', name: 'q', placeholderKey: 'searchBing', icon: 'fab fa-microsoft text-teal-400' },
+            yiso: { action: 'https://yiso.fun/info', name: 'searchKey', placeholderKey: 'searchYiso', icon: 'fas fa-search text-cyan-400' },
+            youtube: { action: 'https://www.youtube.com/results', name: 'search_query', placeholderKey: 'searchYoutube', icon: 'fab fa-youtube text-red-500' },
             wiki: { action: 'https://zh.wikipedia.org/w/index.php', name: 'search', placeholderKey: 'searchWiki', icon: 'fas fa-wikipedia-w text-slate-300' },
             github: { action: 'https://github.com/search', name: 'q', placeholderKey: 'searchGithub', icon: 'fab fa-github text-slate-400' }
         };
         
-        // 修复：菜单切换函数 - 使用 classList.toggle
         function toggleEngineMenu(e) { 
             e.stopPropagation(); 
             const menu = document.getElementById('engine-menu');
@@ -855,7 +849,6 @@
             input.setAttribute('data-i18n-placeholder', engine.placeholderKey);
             input.placeholder = t(engine.placeholderKey);
             icon.className = engine.icon;
-            // 关闭菜单
             document.getElementById('engine-menu').classList.remove('show');
         }
 
@@ -968,7 +961,7 @@
 
             if (showExpandBtn) { 
                 actionWrapper.classList.remove('hidden'); const btn = document.getElementById('expand-btn'); 
-                btn.innerHTML = isCustomLinksExpanded ? `<span data-i18n="collapseMore">${t('collapseMore')}</span> <i class="fas fa-chevron-up text-[10px]"></i>` : `<span data-i18n="expandMore">${t('expandMore')}</span> (${links.length - 9}) <i class="fas fa-chevron-down text-[10px]"></i>`; 
+                btn.innerHTML = isCustomLinksExpanded ? `<span data-i18n="collapseMore">${t('collapseMore')}</span> <i class="fas fa-chevron-up text-[10px]"></i>` : `<span data-i18n="expandMore">${t('expandMore')}</span> (${links.length - 9}) <i class="fas fa-chevron-down text-[10px]</i>`; 
             } else { actionWrapper.classList.add('hidden'); }
         }
 
@@ -977,7 +970,6 @@
 
         // --- 初始化 ---
         document.addEventListener('click', function(e) {
-            // 点击页面其他地方关闭菜单
             const menu = document.getElementById('engine-menu');
             const btn = document.getElementById('engine-btn');
             if (menu && !menu.contains(e.target) && !btn.contains(e.target)) {
