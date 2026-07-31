@@ -299,7 +299,7 @@
         <div class="nav-grid-wrapper w-full">
             <div id="main-nav-grid" class="w-full grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6 relative z-10 items-start">
 
-                <!-- “添加自定义区域”按钮 -->
+                <!-- “快捷应用”卡片已删除，只保留“添加自定义区域”按钮，并恢复为原来大小 -->
                 <div id="add-section-card" class="admin-only glass-card rounded-2xl p-5 flex flex-col items-center justify-center cursor-pointer hover:border-indigo-500/50 transition-all border-dashed border-2 border-slate-500/30 xl:col-span-1" onclick="addCustomSection()" style="min-height: 160px;">
                     <i class="fas fa-plus text-3xl text-slate-400 mb-2"></i>
                     <span class="text-sm font-medium text-slate-400 mt-1" data-i18n="addSectionBtn">添加自定义区域</span>
@@ -324,6 +324,7 @@
                             <button type="button" onclick="selectEngine('translate')" class="w-full text-left px-4 py-2.5 hover:bg-indigo-600/20 text-sm flex items-center space-x-2 cursor-pointer"><i class="fas fa-language text-emerald-400" style="width:18px;"></i> <span>谷歌翻译</span></button>
                             <button type="button" onclick="selectEngine('yiso')" class="w-full text-left px-4 py-2.5 hover:bg-indigo-600/20 text-sm flex items-center space-x-2 cursor-pointer"><i class="fas fa-search text-cyan-400" style="width:18px;"></i> <span>易搜</span></button>
                             <button type="button" onclick="selectEngine('youtube')" class="w-full text-left px-4 py-2.5 hover:bg-indigo-600/20 text-sm flex items-center space-x-2 cursor-pointer"><i class="fab fa-youtube text-red-500" style="width:18px;"></i> <span>YouTube</span></button>
+                            <!-- 新增“电子书”项 -->
                             <button type="button" onclick="selectEngine('zlib')" class="w-full text-left px-4 py-2.5 hover:bg-indigo-600/20 text-sm flex items-center space-x-2 cursor-pointer"><i class="fas fa-book text-amber-400" style="width:18px;"></i> <span>电子书</span></button>
                             <button type="button" onclick="selectEngine('wiki')" class="w-full text-left px-4 py-2.5 hover:bg-indigo-600/20 text-sm flex items-center space-x-2 cursor-pointer"><i class="fas fa-wikipedia-w text-slate-300" style="width:18px;"></i> <span>WiKi</span></button>
                             <button type="button" onclick="selectEngine('github')" class="w-full text-left px-4 py-2.5 hover:bg-indigo-600/20 text-sm flex items-center space-x-2 cursor-pointer"><i class="fab fa-github text-slate-400" style="width:18px;"></i> <span>GitHub</span></button>
@@ -453,8 +454,7 @@
             document.getElementById('page-title').innerText = t('pageTitle');
             document.querySelectorAll('[data-i18n]').forEach(el => { el.innerHTML = t(el.getAttribute('data-i18n')); });
             document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { el.placeholder = t(el.getAttribute('data-i18n-placeholder')); });
-            // 重新渲染动态区域以应用语言变化
-            renderDynamicSections();
+            loadCustomLinks(); renderDynamicSections();
         }
 
         function checkAdminSession() {
@@ -491,98 +491,56 @@
             } catch (e) { console.error("云端密码同步失败", e); }
         }
 
-        // --- 拖拽核心逻辑 ---
+        // --- 拖拽 ---
         function handleDragStart(e, type, secId, linkIdx = null) {
             e.stopPropagation(); 
-            if (localStorage.getItem('nav_admin_auth') !== 'true') { 
-                e.preventDefault(); 
-                return; 
-            }
-            dragType = type; 
-            dragSecId = secId; 
-            dragLinkIdx = linkIdx;
+            if (localStorage.getItem('nav_admin_auth') !== 'true') { e.preventDefault(); return; }
+            dragType = type; dragSecId = secId; dragLinkIdx = linkIdx;
             e.dataTransfer.effectAllowed = 'move';
             const target = e.currentTarget;
             setTimeout(() => target.classList.add('dragging'), 0);
         }
-
         function handleDragEnd(e) {
             e.stopPropagation(); 
             e.currentTarget.classList.remove('dragging');
             document.querySelectorAll('.dynamic-section-card, .group').forEach(el => el.style.border = '');
         }
-
         function handleDragOver(e, type) { 
-            e.preventDefault(); 
-            e.stopPropagation(); 
-            e.dataTransfer.dropEffect = 'move'; 
-            return false; 
+            e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect = 'move'; return false; 
         }
-
         function handleDrop(e, type, targetSecId, targetLinkIdx = null) {
-            e.stopPropagation(); 
-            e.preventDefault();
+            e.stopPropagation(); e.preventDefault();
             if (localStorage.getItem('nav_admin_auth') !== 'true') return;
-            if (!dragType) return;
-
             let secs = cloudConfig.dynamicSections || [];
-
-            // 处理卡片拖拽 (section -> section)
             if (dragType === 'section' && type === 'section') {
-                if (dragSecId === targetSecId) {
-                    dragType = null;
-                    return;
-                }
+                if (dragSecId === targetSecId) return;
                 const fromIdx = secs.findIndex(s => s.id === dragSecId);
                 const toIdx = secs.findIndex(s => s.id === targetSecId);
                 if(fromIdx > -1 && toIdx > -1) {
                     const [moved] = secs.splice(fromIdx, 1);
                     secs.splice(toIdx, 0, moved);
-                    saveDynamicSections(secs);
                 }
-                dragType = null;
-                return;
-            }
-
-            // 处理链接拖拽 (link -> link)
-            if (dragType === 'link' && type === 'link') {
-                if (dragSecId === targetSecId && dragLinkIdx === targetLinkIdx) {
-                    dragType = null;
-                    return;
-                }
+            } 
+            else if (dragType === 'link' && type === 'link') {
+                if (dragSecId === targetSecId && dragLinkIdx === targetLinkIdx) return;
                 const fromSec = secs.find(s => s.id === dragSecId);
                 const toSec = secs.find(s => s.id === targetSecId);
                 if (fromSec && toSec) {
                     let actualTargetIdx = targetLinkIdx;
-                    if (actualTargetIdx === null || actualTargetIdx === undefined) {
-                        actualTargetIdx = toSec.links.length;
-                    }
                     const [movedLink] = fromSec.links.splice(dragLinkIdx, 1);
                     toSec.links.splice(actualTargetIdx, 0, movedLink);
-                    saveDynamicSections(secs);
                 }
-                dragType = null;
-                return;
+            } 
+            else if (dragType === 'link' && type === 'section') {
+                 const fromSec = secs.find(s => s.id === dragSecId);
+                 const toSec = secs.find(s => s.id === targetSecId);
+                 if (fromSec && toSec) {
+                     if (fromSec === toSec) return; 
+                     const [movedLink] = fromSec.links.splice(dragLinkIdx, 1);
+                     toSec.links.push(movedLink);
+                 }
             }
-
-            // 处理链接拖拽到卡片 (link -> section)
-            if (dragType === 'link' && type === 'section') {
-                const fromSec = secs.find(s => s.id === dragSecId);
-                const toSec = secs.find(s => s.id === targetSecId);
-                if (fromSec && toSec) {
-                    if (fromSec === toSec) {
-                        dragType = null;
-                        return;
-                    }
-                    const [movedLink] = fromSec.links.splice(dragLinkIdx, 1);
-                    toSec.links.push(movedLink);
-                    saveDynamicSections(secs);
-                }
-                dragType = null;
-                return;
-            }
-
-            dragType = null;
+            saveDynamicSections(secs);
         }
 
         // --- 云端调度 ---
@@ -591,20 +549,7 @@
             document.body.classList.remove('theme-light', 'theme-dark'); document.body.classList.add(savedTheme);
             const globalDefaultBg = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop"; 
             let savedBg = localStorage.getItem('nav_custom_wallpaper');
-            
-            // 加载动态区域数据
-            let savedSections = localStorage.getItem('nav_dynamic_sections');
-            if (savedSections) {
-                try {
-                    cloudConfig.dynamicSections = JSON.parse(savedSections);
-                } catch(e) {
-                    cloudConfig.dynamicSections = [];
-                }
-            } else {
-                cloudConfig.dynamicSections = [];
-            }
-            
-            // 从云端同步
+            cloudConfig.dynamicSections = JSON.parse(localStorage.getItem('nav_dynamic_sections') || '[]');
             try {
                 const res = await fetch('/api/config');
                 if (res.ok) {
@@ -614,19 +559,13 @@
                             if (configData.wallpaper === "") { savedBg = null; localStorage.removeItem('nav_custom_wallpaper'); document.body.classList.add('bg-cleared'); } 
                             else { savedBg = configData.wallpaper; localStorage.setItem('nav_custom_wallpaper', savedBg); document.body.classList.remove('bg-cleared'); }
                         }
-                        if (configData.dynamicSections) { 
-                            cloudConfig.dynamicSections = configData.dynamicSections; 
-                            localStorage.setItem('nav_dynamic_sections', JSON.stringify(cloudConfig.dynamicSections)); 
-                        }
+                        if (configData.dynamicSections) { cloudConfig.dynamicSections = configData.dynamicSections; localStorage.setItem('nav_dynamic_sections', JSON.stringify(cloudConfig.dynamicSections)); }
                         if (configData.adminPwd) { cloudConfig.adminPwd = configData.adminPwd; }
                     }
                 }
             } catch (e) {}
-
             if (!savedBg && !document.body.classList.contains('bg-cleared')) savedBg = globalDefaultBg; 
             if (savedBg) { applyWallpaperStyles(savedBg); document.getElementById('custom-bg-input').value = savedBg; document.getElementById('clear-bg-btn').classList.remove('hidden'); }
-            
-            // 渲染动态区域
             renderDynamicSections();
         }
 
@@ -660,7 +599,7 @@
             }
         }
 
-        // --- 动态区域管理 ---
+        // --- 动态区域 ---
         function saveDynamicSections(sections) {
             localStorage.setItem('nav_dynamic_sections', JSON.stringify(sections));
             updateCloudConfig('dynamicSections', sections);
@@ -700,543 +639,337 @@
         function openEditDescModal(source, secId, index) {
             editingLinkRef = { source, secId, index };
             let currentDesc = '';
-            if (source === 'section') {
+            if (source === 'custom') {
+                const links = JSON.parse(localStorage.getItem('nav_custom_links') || '[]');
+                if (links[index]) currentDesc = links[index].desc || '';
+            } else if (source === 'section') {
                 const secs = cloudConfig.dynamicSections || [];
-                const sec = secs.find(s => s.id === secId);
-                if (sec && sec.links[index])Config.dynamicSections || [];
                 const sec = secs.find(s => s.id === secId);
                 if (sec && sec.links[index]) currentDesc = sec.links[index].desc || '';
             }
-            document.getElementById currentDesc = sec.links[index].desc || '';
-            }
-            document.getElementById('edit-desc('edit-desc-input').value =-input').value = currentDesc;
-            currentDesc;
-            document.getElementById('edit-desc-modal document.getElementById('edit-desc-modal').').classList.remove('hidden');
+            document.getElementById('edit-desc-input').value = currentDesc;
+            document.getElementById('edit-desc-modal').classList.remove('hidden');
         }
 
-classList.remove('hidden');
-               function closeEditDescModal(e }
-
-        function closeEditDescModal(e)) {
-            if (e && e.target {
+        function closeEditDescModal(e) {
             if (e && e.target && e.target.id !== 'edit-desc-modal') return;
             document.getElementById('edit-desc-modal').classList.add('hidden');
             editingLinkRef = null;
         }
 
-        function save && e.target.id !== 'edit-desc-modal') return;
-            document.getElementById('edit-desc-modal').classList.add('hidden');
-            editingLinkRef = null;
-        }
-
         function saveEditDesc() {
-            if (!edEditDesc() {
             if (!editingLinkRef) return;
-            constitingLinkRef) return;
-            const newDesc = document.getElementById('edit-desc-input').value.trim();
             const newDesc = document.getElementById('edit-desc-input').value.trim();
             const { source, secId, index } = editingLinkRef;
             
-            if (source === ' { source, secId, index } = editingLinkRef;
-            
-            if (source === 'section') {
-                let secs =section') {
+            if (source === 'custom') {
+                let links = JSON.parse(localStorage.getItem('nav_custom_links') || '[]');
+                if (links[index]) {
+                    links[index].desc = newDesc;
+                    localStorage.setItem('nav_custom_links', JSON.stringify(links));
+                    fetch('/api/links', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(links) }).catch(() => {});
+                    loadCustomLinks();
+                }
+            } else if (source === 'section') {
                 let secs = cloudConfig.dynamicSections || [];
                 const sec = secs.find(s => s.id === secId);
-                if cloudConfig.dynamicSections || [];
-                const sec = secs.find(s => s.id === secId);
-                (sec && sec.links[index]) {
- if (sec && sec.links[index                    sec.links[index].desc = new]) {
-                    sec.links[index].desc =Desc;
-                    saveDynamicSections newDesc;
-                    saveDynamicS(secs);
-                }
-            }
-           ections(secs);
+                if (sec && sec.links[index]) {
+                    sec.links[index].desc = newDesc;
+                    saveDynamicSections(secs);
                 }
             }
             closeEditDescModal();
         }
 
-        // --- 核心渲染函数 ---
-        closeEditDescModal();
-        }
-
-        // --- 核心渲染函数 ---
         function renderDynamicSections() {
-            function renderDynamicSections() {
-            // 移除所有旧的动态卡片
- // 移除所有旧的动态卡片
-            document.querySelectorAll('.dynamic-section-card            document.querySelectorAll('.dynamic-section-card').forEach(el => el.remove());
-            
-            const grid = document.getElementById('main').forEach(el => el.remove());
-            
+            document.querySelectorAll('.dynamic-section-card').forEach(el => el.remove());
             const grid = document.getElementById('main-nav-grid');
-            const addBtnCard-nav-grid');
             const addBtnCard = document.getElementById('add-section-card');
- = document.getElementById('add-section-card');
-            
-            // 确保 addBtn            
-            // 确保 addBtnCard 存在
-            if (!addCard 存在
-            if (!addBtnCard) {
-                console.wBtnCard) {
-                console.warn("add-sectionarn("add-section-card not found");
-                return;
-           -card not found");
-                return;
-            }
-            
-            let secs = cloud }
-            
-            let secs = cloudConfigConfig.dynamicSections || [];
+            let secs = cloudConfig.dynamicSections || [];
 
-.dynamicSections || [];
-
-            sec            secs.forEach((sec) => {
-                consts.forEach((sec) => {
-                const isExpanded = !!expandedDynamic isExpanded = !!expandedDynamicSections[sec.id];
-                constSections[sec.id];
+            secs.forEach((sec) => {
+                const isExpanded = !!expandedDynamicSections[sec.id];
                 const linkCount = sec.links.length;
- linkCount = sec.links.length;
-                const isCompact = linkCount >                const isCompact = linkCount > 6;
+                const isCompact = linkCount > 6;
 
-                let gridCols 6;
-
-                let gridCols = isCompact ? 'grid-cols = isCompact ? 'grid-cols-3 gap-2' : '-3 gap-2' : 'grid-cols-2 gap-3grid-cols-2 gap-3';
-                let visibleLinks = sec';
-                let visibleLinks = sec.l.links;
-                let showExpandBtninks;
+                let gridCols = isCompact ? 'grid-cols-3 gap-2' : 'grid-cols-2 gap-3';
+                let visibleLinks = sec.links;
                 let showExpandBtn = false;
 
- = false;
-
-                if (linkCount                if (linkCount > 9) {
-                    showExpand > 9) {
-                    showExpandBtn = trueBtn = true;
+                if (linkCount > 9) {
+                    showExpandBtn = true;
                     if (!isExpanded) {
-                        visibleLinks =;
-                    if (!is sec.links.slice(0, Expanded) {
-                        visibleLinks = sec.links.slice(0, 99);
+                        visibleLinks = sec.links.slice(0, 9);
                     }
                 }
 
-                const);
-                    }
-                }
-
-                const card = document.createElement card = document.createElement('div');
-                card.className = "dynamic-section-card('div');
-                card.className = "dynamic-section-card glass-card rounded-2xl p-5 shadow-xl hover:border-indigo-500/30 glass-card rounded-2xl p-5 shadow-xl hover:border-indigo transition-all duration-300 relative xl:col-span-1";
-                card.id = `section-${sec.id-500/30 transition-all duration-300 relative xl:col-span-1";
+                const card = document.createElement('div');
+                card.className = "dynamic-section-card glass-card rounded-2xl p-5 shadow-xl hover:border-indigo-500/30 transition-all duration-300 relative xl:col-span-1";
                 card.id = `section-${sec.id}`;
-                card}`;
-                card.draggable.draggable = true;
-                = true;
-                card.ondragstart = (e) => handleDrag card.ondragstart = (eStart(e, 'section', sec.id);
-                card.ondragend =) => handleDragStart(e, 'section', sec.id);
+                card.draggable = true;
+                card.ondragstart = (e) => handleDragStart(e, 'section', sec.id);
                 card.ondragend = handleDragEnd;
- handleDragEnd;
-                card.ond                card.ondragover =ragover = (e) => handle (e) => handleDragOver(eDragOver(e, 'section');
+                card.ondragover = (e) => handleDragOver(e, 'section');
                 card.ondrop = (e) => handleDrop(e, 'section', sec.id);
 
                 let linksHtml = '';
-                if, 'section');
-                card.ondrop = (e) => handleDrop(e, 'section', sec.id);
-
-                let linksHtml = '';
-                if (link (linkCount === 0) {
-Count === 0) {
-                    linksHtml                    linksHtml = `<div class=" = `<div class="col-span-fullcol-span-full text-center text-xs text text-center text-xs text-slate-400-slate-400/60 py-4">${t('noCloudLinks/60 py-4">${t')}</div>`;
-                } else('noCloudLinks')}</div>`;
+                if (linkCount === 0) {
+                    linksHtml = `<div class="col-span-full text-center text-xs text-slate-400/60 py-4">${t('noCloudLinks')}</div>`;
                 } else {
-                    const p {
-                    const pClass = isCompactClass = isCompact ? 'p- ? 'p-2' : '2' : 'p-3';
-                    const spaceXClass = isCompactp-3';
-                    const spaceXClass = isCompact ? 'space-x ? 'space-x-1.5-1.5' : 'space-x-2.' : 'space-x-2.5';
-5';
-                    const                    const iconSizeClass = isCompact ? iconSizeClass = isCompact ? 'w-4 h 'w-4 h-4 text-4 text-[9px]'-[9px]' : 'w-5 h-5 text-[10px : 'w-5 h-5]';
-                    const imgSizeClass = text-[10px]';
-                    const imgSizeClass = isCompact ? ' isCompact ? 'w-4 hw-4 h-4' :-4' : 'w-5 h-5';
-                    const textSize 'w-5 h-5';
-Class = isCompact ? '                    const textSizeClass = isCompacttext-[11px]' : 'text-sm ? 'text-[11px]' : 'text-sm';
-                    const pr';
-                    const prClass = isCompactClass = isCompact ? 'pr-4' : 'pr-5';
- ? 'pr-4' : '                    const dragMrpr-5';
-                    const dragMrClass = isCompact ?Class = isCompact ? 'mr-1.5' 'mr-1.5' : 'mr- : 'mr-2.5';
-                    const btnClass = isCompact ?2.5';
-                    const btnClass = isCompact ? 'right-1 text-[10px] px-1 'right-1 text-[10px py-0.5' : '] px-1 py-0.right-2 text-xs p-15' : 'right-2 text-xs p-1';
+                    const pClass = isCompact ? 'p-2' : 'p-3';
+                    const spaceXClass = isCompact ? 'space-x-1.5' : 'space-x-2.5';
+                    const iconSizeClass = isCompact ? 'w-4 h-4 text-[9px]' : 'w-5 h-5 text-[10px]';
+                    const imgSizeClass = isCompact ? 'w-4 h-4' : 'w-5 h-5';
+                    const textSizeClass = isCompact ? 'text-[11px]' : 'text-sm';
+                    const prClass = isCompact ? 'pr-4' : 'pr-5';
+                    const dragMrClass = isCompact ? 'mr-1.5' : 'mr-2.5';
+                    const btnClass = isCompact ? 'right-1 text-[10px] px-1 py-0.5' : 'right-2 text-xs p-1';
 
-                    visibleLinks';
-
-                    visibleLinks.forEach((link,.forEach((link, idx) => {
- idx) => {
-                        const displayName =                        const displayName = getLocal getLocalizedLinkName(izedLinkName(link.name, linklink.name, link.url);
-                        let.url);
-                        let description = link.d description = link.desc || '';
+                    visibleLinks.forEach((link, idx) => {
+                        const displayName = getLocalizedLinkName(link.name, link.url);
+                        let description = link.desc || '';
                         if (!description && link.url) {
-esc || '';
-                        if (!description &&                            description = extractDomainFromUrl(link link.url) {
                             description = extractDomainFromUrl(link.url);
-                           .url);
-                            link.desc = description link.desc = description;
+                            link.desc = description;
                         }
-                       ;
-                        }
-                        let displayIcon = `< let displayIcon = `<div class="${icondiv class="${iconSizeClass} rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justifySizeClass} rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold shrink--center font-bold shrink-0">${display0">${displayName.charAt(0Name.charAt(0).toUpperCase()}</div>`;
-).toUpperCase()}</div>`;
-                        try { if(link.url) displayIcon =                        try { if(link.url) `<img src="https://unavatar.io displayIcon = `<img src="https://unavatar.io/duckdu/duckduckgo/${newckgo/${new URL(link.url URL(link.url).hostname}").hostname}" draggable=" draggable="false" onerror="this.style.display='none'" classfalse" onerror="this.style.display="${imgSizeClass} rounded object='none'" class="${imgSizeClass-contain shrink-0" alt="icon} rounded object-contain shrink-0" alt="icon" />`;" />`; } catch(e){}
+                        let displayIcon = `<div class="${iconSizeClass} rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold shrink-0">${displayName.charAt(0).toUpperCase()}</div>`;
+                        try { if(link.url) displayIcon = `<img src="https://unavatar.io/duckduckgo/${new URL(link.url).hostname}" draggable="false" onerror="this.style.display='none'" class="${imgSizeClass} rounded object-contain shrink-0" alt="icon" />`; } catch(e){}
 
- } catch(e){}
-
-                        linksHtml                        linksHtml += `
-                        < += `
-                        <div class="div class="group relative flex items-center justify-between ${pClass} bg-slate-500group relative flex items-center justify-between ${pClass} bg-slate-500/5 border border-slate-500/5 border border-slate-500//10 rounded-xl hover:bg-ind10 rounded-xl hover:bg-indigo-600/10 transition-all"
-                             draggable="true"
-                             ondragstart="handleDragStart(event, 'link',igo-600/10 transition-all"
-                             draggable="true"
-                             ondragstart="handleDragStart(event, 'link', '${sec.id '${sec.id}', ${idx})"
-                             ondragend="handleDragEnd(event)"
-                             ondrago}', ${idx})"
-                             ondragend="handleDragEnd(event)"
-                             ondragover="handleDragver="handleDragOver(event, 'Over(event, 'link')"
-                            link')"
-                             ondrop="handleDrop(event, ' ondrop="handleDrop(event, 'link', '${sec.id}', ${idx})">
-                           link', '${sec.id}', ${ <div class="flex items-center widx})">
-                            <div class="-full overflow-visible">
-                                <iflex items-center w-full overflow-visible">
-                                <i class="fas fa class="fas fa-grip-vertical text-slate-500 opacity-0-grip-vertical text-slate-500 opacity-0 group-hover:opacity-50 transition-opacity ${dragMr group-hover:opacity-50 transition-opacity ${dragMrClass} cursor-move admin-only text-[10px] shrink-0"></i>
-                                <div class="Class} cursor-move admin-only text-[10px] shrink-0"></i>
-                                <div class="link-toollink-tooltip-wrapper flex items-centertip-wrapper flex items-center ${space ${spaceXClass} truncate wXClass} truncate w-full ${prClass-full ${prClass}" style="overflow: visible !important;">
-                                    <a}" style="overflow: visible !important href="${link.url}" dragg;">
-                                    <a href="${link.url}" draggable="false"able="false" target="_blank" target="_blank" rel="noop rel="noopener noreferrer"ener noreferrer" class="flex class="flex items-center ${spaceXClass} trunc items-center ${spaceXClass} truncate">
-                                        ${displayIcon} <span class="${textSizeClass} fontate">
-                                        ${displayIcon} <span class="${textSizeClass} font-medium truncate">${displayName}</-medium truncate">${displayName}</span>
-                                    </a>
-                                    ${description ? `<span class="tooltip-text">${description}</span>` :span>
+                        linksHtml += `
+                        <div class="group relative flex items-center justify-between ${pClass} bg-slate-500/5 border border-slate-500/10 rounded-xl hover:bg-indigo-600/10 transition-all" style="overflow: visible !important;">
+                            <div class="flex items-center w-full overflow-visible">
+                                <i class="fas fa-grip-vertical text-slate-500 opacity-0 group-hover:opacity-50 transition-opacity ${dragMrClass} cursor-move admin-only text-[10px] shrink-0"></i>
+                                <div class="link-tooltip-wrapper flex items-center ${spaceXClass} truncate w-full ${prClass}" style="overflow: visible !important;">
+                                    <a href="${link.url}" draggable="false" target="_blank" rel="noopener noreferrer" class="flex items-center ${spaceXClass} truncate">
+                                        ${displayIcon} <span class="${textSizeClass} font-medium truncate">${displayName}</span>
                                     </a>
                                     ${description ? `<span class="tooltip-text">${description}</span>` : ''}
                                 </div>
-                            </ ''}
-                                </div>
                             </div>
                             <div class="flex items-center gap-1 shrink-0">
-div>
-                            <div class="flex items                                <button type="button" onclick="openEditDescModal('section', '${sec.id}', ${idx})" class="-center gap-1 shrink-0">
-                                <button type="button" onclick="openEditDescModal('section', '${sec.id}', ${idx})" class="admin-only edit-desc-btn textadmin-only edit-desc-btn text-[10px] text-slate-400-[10px] text-slate-400 hover:text-indigo-400 transition-opacity" title="编辑备注"><i class="fas fa-pen hover:text-indigo-400 transition-opacity" title="编辑备注"><i class="fas fa-pen"></i"></i></button>
-                                <button type="button" onclick="deleteSection></button>
-                                <button type="button" onclick="deleteSectionLink(event, 'Link(event, '${sec.id}',${sec.id}', ${idx})" class="admin-only ${btnClass} ${idx})" class="admin-only text-slate-400 hover:text-red ${btnClass} text-slate-400 hover:text-red-400 opacity--400 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-500/20 rounded0 group-hover:opacity-100 transition-opacity bg-slate-500/20 rounded cursor-pointer shrink-0">< cursor-pointer shrink-0"><i classi class="fas fa-trash-alt"></="fas fa-trash-alt"></i></button>
+                                <button type="button" onclick="openEditDescModal('section', '${sec.id}', ${idx})" class="admin-only edit-desc-btn text-[10px] text-slate-400 hover:text-indigo-400 transition-opacity" title="编辑备注"><i class="fas fa-pen"></i></button>
+                                <button type="button" onclick="deleteSectionLink(event, '${sec.id}', ${idx})" class="admin-only ${btnClass} text-slate-400 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-500/20 rounded cursor-pointer shrink-0"><i class="fas fa-trash-alt"></i></button>
                             </div>
-                       i></button>
-                            </div>
- </div>`;
-                    });
-                }
-
                         </div>`;
                     });
-                               let expandHtml = '';
-                if }
+                }
 
                 let expandHtml = '';
                 if (showExpandBtn) {
-                    const (showExpandBtn) {
                     const btnText = isExpanded
-                        ? btnText = isExpanded
-                        `<span data-i18n="collapseMore">${ ? `<span data-i18n="t('collapseMorecollapseMore">${t('collapseMore')}</span>')}</span> <i class="fas fa-chevron-up text <i class="fas fa-chevron-up text-[10px]"></-[10px]"></i>`
-                       i>`
-                        : `<span data-i18n="expandMore">${t('expandMore')}</span> (${linkCount - 9}) < : `<span data-i18n="expandMore">${t('expandMore')}</span> (${linkCount - 9}) <i class="i class="fas fa-chevfas fa-chevron-down textron-down text-[10px]"></-[10px]"></i>`;
-                   i>`;
+                        ? `<span data-i18n="collapseMore">${t('collapseMore')}</span> <i class="fas fa-chevron-up text-[10px]"></i>`
+                        : `<span data-i18n="expandMore">${t('expandMore')}</span> (${linkCount - 9}) <i class="fas fa-chevron-down text-[10px]"></i>`;
                     expandHtml = `
-                        <div class="mt-3 expandHtml = `
-                        <div class="mt-3 pt-2 border pt-2 border-t border-slate-500/10 text-center">
-                            <button type="button" onclick="toggleDynamicSection-t border-slate-500/10 text-center">
-                            <button type="button" onclick="toggleDynamicSectionExpandExpand('${sec.id}')('${sec.id}')"" class="text-xs font-semibold text-indigo-400 hover:text-ind class="text-xs font-semiboldigo-300 transition-colors cursor-pointer text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer inline-flex items-center gap-1">
- inline-flex items-center gap-1">
-                                                               ${btnText}
-                            </button ${btnText}
+                        <div class="mt-3 pt-2 border-t border-slate-500/10 text-center">
+                            <button type="button" onclick="toggleDynamicSectionExpand('${sec.id}')" class="text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer inline-flex items-center gap-1">
+                                ${btnText}
                             </button>
                         </div>
-                        </div>
-                    `;
-                }
-
-                card.innerHTML = `
-                    <div>
                     `;
                 }
 
                 card.innerHTML = `
                     <div class="flex justify-between items-center mb-3">
-                        <h3 class="text class="flex justify-between items-center mb-3">
-                        <h3 class="-lg font-semibold text-indigotext-lg font-semibold text-indigo-400 flex items-center cursor-move-400 flex items-center cursor-move" title="长按拖拽排序" title="长按拖拽排序" style="cursor: grab;">
-                           " style="cursor: grab;">
-                            <i class="fas fa-grip <i class="fas fa-grip-vertical mr-2 text-slate-vertical mr-2 text-slate-500 opacity-60 admin-only text-sm"></i>
-                            <i class="fas fa-layer-group mr-2-500 opacity-60 admin-only text-sm"></i>
-                            <i class="fas fa-layer-group mr-2.5"></i> <span>.5"></i> <span>${sec.title}</span>
-                        </${sec.title}</span>
+                        <h3 class="text-lg font-semibold text-indigo-400 flex items-center cursor-move" title="长按拖拽排序" style="cursor: grab;">
+                            <i class="fas fa-grip-vertical mr-2 text-slate-500 opacity-60 admin-only text-sm"></i>
+                            <i class="fas fa-layer-group mr-2.5"></i> <span>${sec.title}</span>
                         </h3>
-                        <div class="h3>
                         <div class="flex gap-1.5 shrink-0 ml-2">
-                            <buttonflex gap-1.5 shrink-0 type="button" onclick="openLinkModal(' ml-2">
-                            <button type="button" onclick="openLinkModal('sectionsection_${sec.id}')" class_${sec.id}')" class="admin-only text-[10px]="admin-only text-[10px] px-2 py-1 bg-ind px-2 py-1 bg-indigo-600/20 text-indigoigo-600/20 text-indigo-400 border border-indigo-500-400 border border-indigo-500/20 rounded-md hover:bg-indigo-600/40 transition-colors cursor-pointer z-[50]">${t('addCloud')}</button/20 rounded-md hover:bg-indigo-600/40 transition-colors cursor-pointer z-[50]">${t('addCloud')}</button>
-                            <button type="button" onclick=">
-                            <button type="button" onclick="renameCustomSection('${sec.id}')" class="admin-only text-[10px] px-2 py-1 bg-sky-600/20 text-srenameCustomSection('${sec.id}')" class="admin-only text-[10px] px-2 py-1 bg-sky-600/20 text-sky-400 border border-sky-ky-400 border border-sky-500/20 rounded-md hover:bg500/20 rounded-md hover:bg-sky-600/40 transition-col-sky-600/40 transition-colors cursor-pointer z-[50]ors cursor-pointer z-[50]"><i class="fas fa"><i class="fas fa-pen"></-pen"></i></button>
-                            <button typei></button>
-                            <button type="button" onclick="deleteCustomSection="button" onclick="deleteCustomSection('${sec.id}')" class="admin-only text-[10px] px-2 py-1 bg-red-600/20 text-red-400('${sec.id}')" class="admin-only text-[10px] px-2 py-1 bg-red-600/20 text-red-400 border border border border-red-500/20 rounded-md hover:bg-red-600/40 transition-colors cursor-pointer z-[50]"><i class="fas fa-trash"></-red-500/20 rounded-md hover:bg-red-600/40 transition-colors cursor-pointer z-[50]"><i class="fas fa-trash"></ii></button>
-                        </div></button>
+                            <button type="button" onclick="openLinkModal('section_${sec.id}')" class="admin-only text-[10px] px-2 py-1 bg-indigo-600/20 text-indigo-400 border border-indigo-500/20 rounded-md hover:bg-indigo-600/40 transition-colors cursor-pointer z-[50]">${t('addCloud')}</button>
+                            <button type="button" onclick="renameCustomSection('${sec.id}')" class="admin-only text-[10px] px-2 py-1 bg-sky-600/20 text-sky-400 border border-sky-500/20 rounded-md hover:bg-sky-600/40 transition-colors cursor-pointer z-[50]"><i class="fas fa-pen"></i></button>
+                            <button type="button" onclick="deleteCustomSection('${sec.id}')" class="admin-only text-[10px] px-2 py-1 bg-red-600/20 text-red-400 border border-red-500/20 rounded-md hover:bg-red-600/40 transition-colors cursor-pointer z-[50]"><i class="fas fa-trash"></i></button>
                         </div>
-                   >
                     </div>
-                    <div class </div>
-                    <div class="="grid ${gridCols}" style="min-height: 40px; overflow: visible !important;" 
-                         ondragover="handleDragOver(eventgrid ${gridCols}" style="min-height: 40px; overflow: visible !important;" 
-                         ondragover="handleDragOver(event, 'section')" 
-                         on, 'section')" 
-                         ondrop="handleDrop(event, 'sectiondrop="handleDrop(event, 'section', '${sec.id}')', '${sec.id}')">
-                        ${linksHtml}
-                    </">
+                    <div class="grid ${gridCols}" style="min-height: 40px; overflow: visible !important;" ondragover="handleDragOver(event, 'section')" ondrop="handleDrop(event, 'section', '${sec.id}')">
                         ${linksHtml}
                     </div>
-                    ${expandHtml}
-               div>
                     ${expandHtml}
                 `;
-                grid.insertBefore(card `;
                 grid.insertBefore(card, addBtnCard);
             });
-, addBtnCard);
-            });
-            
-            // 更新            
-            // 更新管理员状态
-            checkAdmin管理员状态
             checkAdminSession();
         }
 
-        function deleteSectionSession();
-        }
-
-        function deleteSectionLink(e, secId, linkLink(e, secId, linkIdx) {
-            e.preventDefault(); eIdx) {
+        function deleteSectionLink(e, secId, linkIdx) {
             e.preventDefault(); e.stopPropagation();
-            let secs = cloudConfig.stopPropagation();
-            let secs = cloudConfig.dynamicSections.dynamicSections || [];
-            const || [];
-            const sec = secs sec = secs.find(s => s.find(s => s.id === secId);
-            if(.id === secId);
-            if(sec) { 
-                sec.linkssec) { 
-                sec.links.splice(linkIdx, 1.splice(linkIdx, 1); 
-                saveDynamicSections(); 
-                saveDynamicSections(secs); 
-            }
+            let secs = cloudConfig.dynamicSections || [];
+            const sec = secs.find(s => s.id === secId);
+            if(sec) { sec.links.splice(linkIdx, 1); saveDynamicSections(secs); }
         }
 
-secs); 
-            }
-        }
-
-        // --- 搜索引擎配置 ---
-        // --- 搜索引擎配置 ---
+        // --- 搜索引擎配置（新增“电子书”项） ---
         const engines = { 
-        const engines = { 
-            google            google: { action: 'https://www: { action: 'https://www.google.com/search', name: 'q', placeholderKey: 'searchGoogle.google.com/search', name: 'q',', icon: 'fab fa-google placeholderKey: 'searchGoogle', icon: ' text-blue-400' },
-            bafab fa-google text-blue-400idu: { action: 'https://' },
-            baidu: { action: 'https://www.baidu.comwww.baidu.com/s', name:/s', name: 'wd', placeholder 'wd', placeholderKey: 'searchBKey: 'searchBaidu',aidu', icon: 'fas fa-p icon: 'fas fa-paw textaw text-red-400' },
-            translate:-red-400' },
-            translate: { action: 'https://translate { action: 'https://translate.google.google.com/', name: 'text', placeholder.com/', name: 'text', placeholderKey: 'searchTranslate', icon:Key: 'searchTranslate', icon: 'fas fa-language text 'fas fa-language text-emerald-400', 
--emerald-400', 
-                          buildUrl                          buildUrl: (query) => `: (query) => `https://translate.googlehttps://translate.google.com/?hl=.com/?hl=zh-cn&zh-cn&sl=auto&sl=auto&tl=zh-Ctl=zh-CN&text=${encodeURIComponent(query)}` },
-           N&text=${encodeURIComponent(query yiso: { action:)}` },
-            yiso: { action: 'https://yiso.fun/info', name: 'searchKey', placeholderKey: 'searchY 'https://yiso.fun/info', name: 'searchKey', placeholderKey: 'searchYiso', icon:iso', icon: 'fas fa-search 'fas fa-search text-cyan-400' },
-            youtube: { action: 'https://www.youtube.com/results', name: text-cyan-400' },
-            youtube: { action: 'https://www.youtube.com/results', name: 'search_query', 'search_query', placeholderKey: ' placeholderKey: 'searchYoutube',searchYoutube', icon: 'fab icon: 'fab fa-youtube text fa-youtube text-red-500' },
-            zlib: { action:-red-500' },
-            zlib 'https://z-library.sk: { action: 'https://z-library.sk/s/', name:/s/', name: 'q', placeholderKey 'q', placeholderKey: 'searchZlib', icon: 'fas fa-book text-amber-400' },
-            wiki: { action: 'https://zh.wikipedia.org: 'searchZlib', icon: 'fas fa-book text-amber-400' },
-            wiki: { action: 'https://zh.wikipedia.org/w/index.php',/w/index.php', name: 'search name: 'search', placeholderKey:', placeholderKey: ' 'searchWiki', icon: 'fassearchWiki', icon: 'fas fa-wikipedia-w fa-wikipedia-w text-slate- text-slate-300' },
-           300' },
-            github: github: { action: 'https://github.com/search', name: 'q', placeholderKey: 'searchGithub', icon: ' { action: 'https://github.com/search', name: 'q', placeholderKey: 'searchGithub', icon: 'fab fa-githubfab fa-github text-slate-400' }
-        text-slate-400' }
+            google: { action: 'https://www.google.com/search', name: 'q', placeholderKey: 'searchGoogle', icon: 'fab fa-google text-blue-400' },
+            baidu: { action: 'https://www.baidu.com/s', name: 'wd', placeholderKey: 'searchBaidu', icon: 'fas fa-paw text-red-400' },
+            translate: { action: 'https://translate.google.com/', name: 'text', placeholderKey: 'searchTranslate', icon: 'fas fa-language text-emerald-400', 
+                          buildUrl: (query) => `https://translate.google.com/?hl=zh-cn&sl=auto&tl=zh-CN&text=${encodeURIComponent(query)}` },
+            yiso: { action: 'https://yiso.fun/info', name: 'searchKey', placeholderKey: 'searchYiso', icon: 'fas fa-search text-cyan-400' },
+            youtube: { action: 'https://www.youtube.com/results', name: 'search_query', placeholderKey: 'searchYoutube', icon: 'fab fa-youtube text-red-500' },
+            // 新增 Z-Library 电子书搜索引擎
+            zlib: { action: 'https://z-library.sk/s/', name: 'q', placeholderKey: 'searchZlib', icon: 'fas fa-book text-amber-400' },
+            wiki: { action: 'https://zh.wikipedia.org/w/index.php', name: 'search', placeholderKey: 'searchWiki', icon: 'fas fa-wikipedia-w text-slate-300' },
+            github: { action: 'https://github.com/search', name: 'q', placeholderKey: 'searchGithub', icon: 'fab fa-github text-slate-400' }
         };
         
         function toggleEngineMenu(e) { 
-            };
-        
-        function toggleEngineMenu(e e.stopPropagation(); 
-            const) { 
             e.stopPropagation(); 
-            const menu = document.getElementById menu = document.getElementById('engine-menu');
-('engine-menu');
-            menu.classList            menu.classList.toggle('show');
-        }
-        
-.toggle('show');
+            const menu = document.getElementById('engine-menu');
+            menu.classList.toggle('show');
         }
         
         function selectEngine(key) { 
-        function selectEngine(key) { 
-            currentEngineKey = key; 
             currentEngineKey = key; 
             const form = document.getElementById('search-form'); 
-            const input = document            const form = document.getElementById('search-form'); 
-            const input = document.getElementById('search.getElementById('search-input'); 
-            const icon = document.getElementById('engine-icon'); 
-            const engine-input'); 
+            const input = document.getElementById('search-input'); 
             const icon = document.getElementById('engine-icon'); 
             const engine = engines[key];
-            if (key = engines[key];
             if (key === 'translate') {
                 form.onsubmit = function(e) {
- === 'translate') {
-                form.onsubmit = function(e) {
                     e.preventDefault();
-                    const query                    e.preventDefault();
-                    const query = = input.value.trim();
+                    const query = input.value.trim();
                     if (query) {
-                        window.open(engine.build input.value.trim();
-                    if (query) {
-                        window.open(engine.buildUrl(query), '_Url(query), '_blank');
+                        window.open(engine.buildUrl(query), '_blank');
                     }
-blank');
-                    }
-                    return false;
                     return false;
                 };
-                               };
                 form.action = '#';
- form.action = '#';
             } else {
-            } else {
-                form.ons                form.onsubmit = nullubmit = null;
-                form.action;
-                form.action = engine.action = engine.action;
-                input.name;
-                input.name = engine.name = engine.name;
+                form.onsubmit = null;
+                form.action = engine.action;
+                input.name = engine.name;
             }
-            input.setAttribute;
-            }
-            input.setAttribute('('data-i18n-placeholder', enginedata-i18n-placeholder', engine.placeholderKey);
+            input.setAttribute('data-i18n-placeholder', engine.placeholderKey);
             input.placeholder = t(engine.placeholderKey);
             icon.className = engine.icon;
-            document.getElementById('.placeholderKey);
-            input.placeholder = t(engine.placeholderKey);
-            icon.className = engine.icon;
-            document.getElementById('engine-menu').classengine-menu').classList.remove('showList.remove('show');
+            document.getElementById('engine-menu').classList.remove('show');
         }
 
-');
-        }
-
-        // ---         // --- 链接管理 ---
-链接管理 ---
-        function openLink        function openLinkModal(target) {Modal(target) { 
-            currentModal 
-            currentModalTarget = target;Target = target; 
-            const text 
-            const textEl = document.getElementByIdEl = document.getElementById('modal-title-text('modal-title-text'); 
-            if'); 
-            if(target === 'friend(target === 'friend') textEl.inner') textEl.innerText = t('Text = t('modalAddFriend');modalAddFriend'); 
-            else if 
-            else if(target === 'custom')(target === 'custom') textEl.innerText textEl.innerText = t(' = t('modalAddCloud'); 
-modalAddCloud'); 
-            else text            else textEl.innerText = t('modalAddSection'); 
-            document.getElementById('siteEl.innerText = t('modalAddSection'); 
-            document.getElementById('site-name').value =-name').value = ''; 
-            document.getElementById('site-url').value = ''; 
-            document.getElementById('site ''; 
+        // --- 链接管理 ---
+        function openLinkModal(target) { 
+            currentModalTarget = target; 
+            const textEl = document.getElementById('modal-title-text'); 
+            if(target === 'friend') textEl.innerText = t('modalAddFriend'); 
+            else if(target === 'custom') textEl.innerText = t('modalAddCloud'); 
+            else textEl.innerText = t('modalAddSection'); 
+            document.getElementById('site-name').value = ''; 
             document.getElementById('site-url').value = ''; 
             document.getElementById('site-desc').value = ''; 
             toggleModal(true); 
         }
-        function toggleModal(show) { const modal = document.getElementById('-desc').value = ''; 
-            toggleModal(true); 
-        }
-        function toggleModal(show) { const modal = document.getElementById('modal'); if (show)modal'); if (show) { modal.classList.remove { modal.classList.remove('hidden'); }('hidden'); } else { modal.classList else { modal.classList.add('hidden');.add('hidden'); } }
-        function } }
-        function closeModalOnBlank closeModalOnBlank(e) { if(e.target.id === 'modal') toggleModal(false); }
+        function toggleModal(show) { const modal = document.getElementById('modal'); if (show) { modal.classList.remove('hidden'); } else { modal.classList.add('hidden'); } }
+        function closeModalOnBlank(e) { if(e.target.id === 'modal') toggleModal(false); }
 
-(e) { if(e.target.id === 'modal') toggle        async function saveActiveModal(false); }
-
-        async function saveLinkActiveLink() {
-            const name =() {
-            const name = document.getElementById(' document.getElementById('site-name').value.trim(); 
-            let url = document.getElementByIdsite-name').value.trim(); 
+        async function saveActiveLink() {
+            const name = document.getElementById('site-name').value.trim(); 
             let url = document.getElementById('site-url').value.trim();
-            const desc = document('site-url').value.trim();
-           .getElementById('site-desc').value.trim const desc = document.getElementById('site-d();
-            if(!name || !urlesc').value.trim();
-            if(!) return alert(currentLang === 'zhname || !url) return alert(current' ? '请完整填写名称和Lang === 'zh' ? '请完整网址！' : 'Please fill in填写名称和网址！' : ' both name and URL!');
-            ifPlease fill in both name and URL!');
-            if(!/^https?:\/\//(!/^https?:\/\//i.test(url)) url = 'https://' + url;
+            const desc = document.getElementById('site-desc').value.trim();
+            if(!name || !url) return alert(currentLang === 'zh' ? '请完整填写名称和网址！' : 'Please fill in both name and URL!');
+            if(!/^https?:\/\//i.test(url)) url = 'https://' + url;
 
-            const newi.test(url)) url = 'https://' + url;
-
-            const newLink = { name, url, descLink = { name, url, desc };
-
-            if (currentModalTarget.st };
+            const newLink = { name, url, desc };
 
             if (currentModalTarget.startsWith('section_')) {
-                const secartsWith('section_')) {
                 const secId = currentModalTarget.replace('section_', ''); 
                 let secs = cloudConfig.dynamicSections || []; 
-                const sec = secs.findId = currentModalTarget.replace('section_', ''); 
-                let secs = cloudConfig.dynamicSections || []; 
                 const sec = secs.find(s => s.id === secId);
-                if(sec) { 
-                    sec.links.push(newLink); 
-                    saveDynamicSections(secs); 
-                } else {
-                    alert(currentLang === 'zh' ? '未找到目标(s => s.id === secId);
-                if(sec) { 
-                    sec.links.push(newLink); 
-                    saveDynamicSections(secs); 
-                } else {
-                    alert(currentLang === 'zh' ? '未找到目标区域，请刷新区域，请刷新后重试' :后重试' : 'Target section not found, 'Target section not found, please refresh and try again');
-                }
- please refresh and try again');
+                if(sec) { sec.links.push(newLink); saveDynamicSections(secs); }
+            } else if(currentModalTarget === 'friend') {
+                // friend 已移除
+            } else {
+                try { 
+                    const res = await fetch('/api/links'); 
+                    let links = res.ok ? await res.json() : JSON.parse(localStorage.getItem('nav_custom_links') || '[]'); 
+                    links.push(newLink); 
+                    await fetch('/api/links', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(links) }); 
+                    localStorage.setItem('nav_custom_links', JSON.stringify(links)); 
+                    loadCustomLinks(); 
+                } 
+                catch (error) { 
+                    const links = JSON.parse(localStorage.getItem('nav_custom_links') || '[]'); 
+                    links.push(newLink); 
+                    localStorage.setItem('nav_custom_links', JSON.stringify(links)); 
+                    loadCustomLinks(); 
                 }
             } 
-            toggleModal(false            } 
             toggleModal(false);
         }
 
-);
+        async function loadCustomLinks() {
+            const container = document.getElementById('custom-links-container'); const actionWrapper = document.getElementById('expand-action-wrapper');
+            container.innerHTML = `<div class="col-span-full text-center text-xs text-slate-400/60 py-10"><i class="fas fa-spinner fa-spin"></i> ${t('loadingCloud')}</div>`;
+            let links = []; try { const res = await fetch('/api/links'); if(res.ok) links = await res.json(); else throw new Error(); } catch(e) { links = JSON.parse(localStorage.getItem('nav_custom_links') || '[]'); }
+            
+            links = links.map(link => {
+                if (!link.desc && link.url) {
+                    link.desc = extractDomainFromUrl(link.url);
+                }
+                return link;
+            });
+            localStorage.setItem('nav_custom_links', JSON.stringify(links));
+            fetch('/api/links', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(links) }).catch(() => {});
+            
+            container.innerHTML = '';
+            
+            if(links.length === 0) { 
+                container.innerHTML = `<div class="col-span-full text-center text-xs text-slate-400/60 py-10">${t('noCloudLinks')}</div>`; 
+                actionWrapper.classList.add('hidden'); 
+                container.className = 'grid grid-cols-2 gap-3';
+                return; 
+            }
+
+            const isCompact = links.length > 6;
+            container.className = isCompact ? 'grid grid-cols-3 gap-2' : 'grid grid-cols-2 gap-3';
+
+            let visibleLinks = links;
+            let showExpandBtn = false;
+            if (links.length > 9) { showExpandBtn = true; if (!isCustomLinksExpanded) visibleLinks = links.slice(0, 9); }
+
+            const pClass = isCompact ? 'p-2' : 'p-3'; const spaceXClass = isCompact ? 'space-x-1.5' : 'space-x-2.5';
+            const iconSizeClass = isCompact ? 'w-4 h-4 text-[9px]' : 'w-5 h-5 text-[10px]'; const imgSizeClass = isCompact ? 'w-4 h-4' : 'w-5 h-5';
+            const textSizeClass = isCompact ? 'text-[11px]' : 'text-sm'; const prClass = isCompact ? 'pr-4' : 'pr-5'; const btnClass = isCompact ? 'right-1 text-[10px] px-1 py-0.5' : 'right-2 text-xs p-1';
+
+            visibleLinks.forEach((item, index) => {
+                const displayName = getLocalizedLinkName(item.name, item.url);
+                const description = item.desc || '';
+                let displayIcon = `<div class="${iconSizeClass} rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold shrink-0">${displayName.charAt(0).toUpperCase()}</div>`;
+                try { if(item.url) displayIcon = `<img src="https://unavatar.io/duckduckgo/${new URL(item.url).hostname}" draggable="false" onerror="this.style.display='none'" class="${imgSizeClass} rounded object-contain shrink-0" alt="icon" />`; } catch(err){}
+                
+                container.innerHTML += `
+                    <div class="group relative flex items-center justify-between ${pClass} bg-slate-500/5 border border-slate-500/10 rounded-xl hover:bg-indigo-600/10 transition-all" style="overflow: visible !important;">
+                        <div class="flex items-center w-full overflow-visible">
+                            <div class="link-tooltip-wrapper flex items-center ${spaceXClass} truncate w-full ${prClass}" style="overflow: visible !important;">
+                                <a href="${item.url}" draggable="false" target="_blank" rel="noopener noreferrer" class="flex items-center ${spaceXClass} truncate">
+                                    ${displayIcon} <span class="${textSizeClass} font-medium truncate">${displayName}</span>
+                                </a>
+                                ${description ? `<span class="tooltip-text">${description}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1 shrink-0">
+                            <button type="button" onclick="openEditDescModal('custom', null, ${index})" class="admin-only edit-desc-btn text-[10px] text-slate-400 hover:text-indigo-400 transition-opacity" title="编辑备注"><i class="fas fa-pen"></i></button>
+                            <button type="button" onclick="deleteCustomLink(event, ${index})" class="admin-only ${btnClass} text-slate-400 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-500/20 rounded cursor-pointer shrink-0"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    </div>`;
+            });
+
+            if (showExpandBtn) { 
+                actionWrapper.classList.remove('hidden'); const btn = document.getElementById('expand-btn'); 
+                btn.innerHTML = isCustomLinksExpanded ? `<span data-i18n="collapseMore">${t('collapseMore')}</span> <i class="fas fa-chevron-up text-[10px]"></i>` : `<span data-i18n="expandMore">${t('expandMore')}</span> (${links.length - 9}) <i class="fas fa-chevron-down text-[10px]"></i>`; 
+            } else { actionWrapper.classList.add('hidden'); }
         }
 
-        // --- 初始化        // --- 初始化 ---
+        function toggleExpandCustomLinks() { isCustomLinksExpanded = !isCustomLinksExpanded; loadCustomLinks(); }
+        async function deleteCustomLink(e, index) { e.preventDefault(); e.stopPropagation(); if(!confirm(t('delConfirm'))) return; try { const res = await fetch('/api/links'); let links = res.ok ? await res.json() : JSON.parse(localStorage.getItem('nav_custom_links') || '[]'); links.splice(index, 1); await fetch('/api/links', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(links) }); localStorage.setItem('nav_custom_links', JSON.stringify(links)); if(links.length <= 9) isCustomLinksExpanded = false; loadCustomLinks(); } catch(error) { const links = JSON.parse(localStorage.getItem('nav_custom_links') || '[]'); links.splice(index, 1); localStorage.setItem('nav_custom_links', JSON.stringify(links)); if(links.length <= 9) isCustomLinksExpanded = false; loadCustomLinks(); } }
+
+        // --- 初始化 ---
         document.addEventListener('click', function(e) {
- ---
-        document.addEventListener('click', function(e) {
-            const menu = document            const menu = document.getElementById('engine.getElementById('engine-menu');
-            const-menu');
-            const btn = document.getElementById btn = document.getElementById('engine-btn');
-           ('engine-btn');
-            if (menu if (menu && !menu.contains(e.target) && !btn.contains(e.target)) {
+            const menu = document.getElementById('engine-menu');
+            const btn = document.getElementById('engine-btn');
+            if (menu && !menu.contains(e.target) && !btn.contains(e.target)) {
                 menu.classList.remove('show');
             }
-            document.getElementById('theme-panel && !menu.contains(e.target) && !btn.contains(e.target)) {
-                menu.classList.remove('show');
-            }
-            document.getElementById('theme-panel').').classList.add('hidden');
+            document.getElementById('theme-panel').classList.add('hidden');
         });
-classList.add('hidden');
-        });
-        
-        // 启动        
-        // 启动应用
-        checkAdmin应用
-        checkAdminSession(); 
-        document.documentElement.lang = currentLang === 'zh'Session(); 
-        document.documentElement ? 'zh-CN' : '.lang = currentLang === 'zh' ? 'zh-CN' : 'en';en'; 
-        applyLanguage(); 
- 
-        applyLanguage(); 
-        initCloudData        initCloudData();
-    </script();
+        checkAdminSession(); document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en'; applyLanguage(); initCloudData();
     </script>
-</body>
->
 </body>
 </html>
