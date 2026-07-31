@@ -299,7 +299,7 @@
         <div class="nav-grid-wrapper w-full">
             <div id="main-nav-grid" class="w-full grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6 relative z-10 items-start">
 
-                <!-- “快捷应用”卡片已删除，只保留“添加自定义区域”按钮，并恢复为原来大小 -->
+                <!-- “添加自定义区域”按钮 -->
                 <div id="add-section-card" class="admin-only glass-card rounded-2xl p-5 flex flex-col items-center justify-center cursor-pointer hover:border-indigo-500/50 transition-all border-dashed border-2 border-slate-500/30 xl:col-span-1" onclick="addCustomSection()" style="min-height: 160px;">
                     <i class="fas fa-plus text-3xl text-slate-400 mb-2"></i>
                     <span class="text-sm font-medium text-slate-400 mt-1" data-i18n="addSectionBtn">添加自定义区域</span>
@@ -324,7 +324,6 @@
                             <button type="button" onclick="selectEngine('translate')" class="w-full text-left px-4 py-2.5 hover:bg-indigo-600/20 text-sm flex items-center space-x-2 cursor-pointer"><i class="fas fa-language text-emerald-400" style="width:18px;"></i> <span>谷歌翻译</span></button>
                             <button type="button" onclick="selectEngine('yiso')" class="w-full text-left px-4 py-2.5 hover:bg-indigo-600/20 text-sm flex items-center space-x-2 cursor-pointer"><i class="fas fa-search text-cyan-400" style="width:18px;"></i> <span>易搜</span></button>
                             <button type="button" onclick="selectEngine('youtube')" class="w-full text-left px-4 py-2.5 hover:bg-indigo-600/20 text-sm flex items-center space-x-2 cursor-pointer"><i class="fab fa-youtube text-red-500" style="width:18px;"></i> <span>YouTube</span></button>
-                            <!-- 新增“电子书”项 -->
                             <button type="button" onclick="selectEngine('zlib')" class="w-full text-left px-4 py-2.5 hover:bg-indigo-600/20 text-sm flex items-center space-x-2 cursor-pointer"><i class="fas fa-book text-amber-400" style="width:18px;"></i> <span>电子书</span></button>
                             <button type="button" onclick="selectEngine('wiki')" class="w-full text-left px-4 py-2.5 hover:bg-indigo-600/20 text-sm flex items-center space-x-2 cursor-pointer"><i class="fas fa-wikipedia-w text-slate-300" style="width:18px;"></i> <span>WiKi</span></button>
                             <button type="button" onclick="selectEngine('github')" class="w-full text-left px-4 py-2.5 hover:bg-indigo-600/20 text-sm flex items-center space-x-2 cursor-pointer"><i class="fab fa-github text-slate-400" style="width:18px;"></i> <span>GitHub</span></button>
@@ -454,7 +453,7 @@
             document.getElementById('page-title').innerText = t('pageTitle');
             document.querySelectorAll('[data-i18n]').forEach(el => { el.innerHTML = t(el.getAttribute('data-i18n')); });
             document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { el.placeholder = t(el.getAttribute('data-i18n-placeholder')); });
-            loadCustomLinks(); renderDynamicSections();
+            renderDynamicSections();
         }
 
         function checkAdminSession() {
@@ -491,56 +490,102 @@
             } catch (e) { console.error("云端密码同步失败", e); }
         }
 
-        // --- 拖拽 ---
+        // --- 拖拽核心逻辑（修复版） ---
         function handleDragStart(e, type, secId, linkIdx = null) {
             e.stopPropagation(); 
-            if (localStorage.getItem('nav_admin_auth') !== 'true') { e.preventDefault(); return; }
-            dragType = type; dragSecId = secId; dragLinkIdx = linkIdx;
+            if (localStorage.getItem('nav_admin_auth') !== 'true') { 
+                e.preventDefault(); 
+                return; 
+            }
+            dragType = type; 
+            dragSecId = secId; 
+            dragLinkIdx = linkIdx;
             e.dataTransfer.effectAllowed = 'move';
             const target = e.currentTarget;
             setTimeout(() => target.classList.add('dragging'), 0);
         }
+
         function handleDragEnd(e) {
             e.stopPropagation(); 
             e.currentTarget.classList.remove('dragging');
             document.querySelectorAll('.dynamic-section-card, .group').forEach(el => el.style.border = '');
         }
+
         function handleDragOver(e, type) { 
-            e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect = 'move'; return false; 
+            e.preventDefault(); 
+            e.stopPropagation(); 
+            e.dataTransfer.dropEffect = 'move'; 
+            return false; 
         }
+
         function handleDrop(e, type, targetSecId, targetLinkIdx = null) {
-            e.stopPropagation(); e.preventDefault();
+            e.stopPropagation(); 
+            e.preventDefault();
             if (localStorage.getItem('nav_admin_auth') !== 'true') return;
+            if (!dragType) return;
+
             let secs = cloudConfig.dynamicSections || [];
+
+            // 场景1：卡片拖拽到卡片 (section -> section)
             if (dragType === 'section' && type === 'section') {
-                if (dragSecId === targetSecId) return;
+                if (dragSecId === targetSecId) {
+                    dragType = null;
+                    return;
+                }
                 const fromIdx = secs.findIndex(s => s.id === dragSecId);
                 const toIdx = secs.findIndex(s => s.id === targetSecId);
-                if(fromIdx > -1 && toIdx > -1) {
+                if (fromIdx > -1 && toIdx > -1) {
                     const [moved] = secs.splice(fromIdx, 1);
                     secs.splice(toIdx, 0, moved);
+                    saveDynamicSections(secs);
                 }
-            } 
-            else if (dragType === 'link' && type === 'link') {
-                if (dragSecId === targetSecId && dragLinkIdx === targetLinkIdx) return;
+                dragType = null;
+                return;
+            }
+
+            // 场景2：链接拖拽到链接 (link -> link)
+            if (dragType === 'link' && type === 'link') {
                 const fromSec = secs.find(s => s.id === dragSecId);
                 const toSec = secs.find(s => s.id === targetSecId);
-                if (fromSec && toSec) {
-                    let actualTargetIdx = targetLinkIdx;
-                    const [movedLink] = fromSec.links.splice(dragLinkIdx, 1);
-                    toSec.links.splice(actualTargetIdx, 0, movedLink);
+                if (!fromSec || !toSec) {
+                    dragType = null;
+                    return;
                 }
-            } 
-            else if (dragType === 'link' && type === 'section') {
-                 const fromSec = secs.find(s => s.id === dragSecId);
-                 const toSec = secs.find(s => s.id === targetSecId);
-                 if (fromSec && toSec) {
-                     if (fromSec === toSec) return; 
-                     const [movedLink] = fromSec.links.splice(dragLinkIdx, 1);
-                     toSec.links.push(movedLink);
-                 }
+                // 如果是同一个卡片内的同一个链接，不做任何事
+                if (dragSecId === targetSecId && dragLinkIdx === targetLinkIdx) {
+                    dragType = null;
+                    return;
+                }
+                // 计算目标索引
+                let actualTargetIdx = targetLinkIdx;
+                if (actualTargetIdx === null || actualTargetIdx === undefined) {
+                    actualTargetIdx = toSec.links.length;
+                }
+                // 如果是在同一个卡片内移动，且目标索引大于原索引，需要减1（因为删除后长度变化）
+                if (dragSecId === targetSecId && actualTargetIdx > dragLinkIdx) {
+                    actualTargetIdx = actualTargetIdx - 1;
+                }
+                const [movedLink] = fromSec.links.splice(dragLinkIdx, 1);
+                toSec.links.splice(actualTargetIdx, 0, movedLink);
+                saveDynamicSections(secs);
+                dragType = null;
+                return;
             }
-            saveDynamicSections(secs);
+
+            // 场景3：链接拖拽到卡片 (link -> section)
+            if (dragType === 'link' && type === 'section') {
+                const fromSec = secs.find(s => s.id === dragSecId);
+                const toSec = secs.find(s => s.id === targetSecId);
+                if (fromSec && toSec && fromSec !== toSec) {
+                    const [movedLink] = fromSec.links.splice(dragLinkIdx, 1);
+                    toSec.links.push(movedLink);
+                    saveDynamicSections(secs);
+                }
+                dragType = null;
+                return;
+            }
+
+            dragType = null;
         }
 
         // --- 云端调度 ---
@@ -549,7 +594,20 @@
             document.body.classList.remove('theme-light', 'theme-dark'); document.body.classList.add(savedTheme);
             const globalDefaultBg = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop"; 
             let savedBg = localStorage.getItem('nav_custom_wallpaper');
-            cloudConfig.dynamicSections = JSON.parse(localStorage.getItem('nav_dynamic_sections') || '[]');
+            
+            // 加载动态区域数据
+            let savedSections = localStorage.getItem('nav_dynamic_sections');
+            if (savedSections) {
+                try {
+                    cloudConfig.dynamicSections = JSON.parse(savedSections);
+                } catch(e) {
+                    cloudConfig.dynamicSections = [];
+                }
+            } else {
+                cloudConfig.dynamicSections = [];
+            }
+            
+            // 从云端同步
             try {
                 const res = await fetch('/api/config');
                 if (res.ok) {
@@ -559,13 +617,18 @@
                             if (configData.wallpaper === "") { savedBg = null; localStorage.removeItem('nav_custom_wallpaper'); document.body.classList.add('bg-cleared'); } 
                             else { savedBg = configData.wallpaper; localStorage.setItem('nav_custom_wallpaper', savedBg); document.body.classList.remove('bg-cleared'); }
                         }
-                        if (configData.dynamicSections) { cloudConfig.dynamicSections = configData.dynamicSections; localStorage.setItem('nav_dynamic_sections', JSON.stringify(cloudConfig.dynamicSections)); }
+                        if (configData.dynamicSections) { 
+                            cloudConfig.dynamicSections = configData.dynamicSections; 
+                            localStorage.setItem('nav_dynamic_sections', JSON.stringify(cloudConfig.dynamicSections)); 
+                        }
                         if (configData.adminPwd) { cloudConfig.adminPwd = configData.adminPwd; }
                     }
                 }
             } catch (e) {}
+
             if (!savedBg && !document.body.classList.contains('bg-cleared')) savedBg = globalDefaultBg; 
             if (savedBg) { applyWallpaperStyles(savedBg); document.getElementById('custom-bg-input').value = savedBg; document.getElementById('clear-bg-btn').classList.remove('hidden'); }
+            
             renderDynamicSections();
         }
 
@@ -599,7 +662,7 @@
             }
         }
 
-        // --- 动态区域 ---
+        // --- 动态区域管理 ---
         function saveDynamicSections(sections) {
             localStorage.setItem('nav_dynamic_sections', JSON.stringify(sections));
             updateCloudConfig('dynamicSections', sections);
@@ -639,10 +702,7 @@
         function openEditDescModal(source, secId, index) {
             editingLinkRef = { source, secId, index };
             let currentDesc = '';
-            if (source === 'custom') {
-                const links = JSON.parse(localStorage.getItem('nav_custom_links') || '[]');
-                if (links[index]) currentDesc = links[index].desc || '';
-            } else if (source === 'section') {
+            if (source === 'section') {
                 const secs = cloudConfig.dynamicSections || [];
                 const sec = secs.find(s => s.id === secId);
                 if (sec && sec.links[index]) currentDesc = sec.links[index].desc || '';
@@ -662,15 +722,7 @@
             const newDesc = document.getElementById('edit-desc-input').value.trim();
             const { source, secId, index } = editingLinkRef;
             
-            if (source === 'custom') {
-                let links = JSON.parse(localStorage.getItem('nav_custom_links') || '[]');
-                if (links[index]) {
-                    links[index].desc = newDesc;
-                    localStorage.setItem('nav_custom_links', JSON.stringify(links));
-                    fetch('/api/links', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(links) }).catch(() => {});
-                    loadCustomLinks();
-                }
-            } else if (source === 'section') {
+            if (source === 'section') {
                 let secs = cloudConfig.dynamicSections || [];
                 const sec = secs.find(s => s.id === secId);
                 if (sec && sec.links[index]) {
@@ -681,10 +733,18 @@
             closeEditDescModal();
         }
 
+        // --- 核心渲染函数 ---
         function renderDynamicSections() {
             document.querySelectorAll('.dynamic-section-card').forEach(el => el.remove());
+            
             const grid = document.getElementById('main-nav-grid');
             const addBtnCard = document.getElementById('add-section-card');
+            
+            if (!addBtnCard) {
+                console.warn("add-section-card not found");
+                return;
+            }
+            
             let secs = cloudConfig.dynamicSections || [];
 
             secs.forEach((sec) => {
@@ -736,7 +796,12 @@
                         try { if(link.url) displayIcon = `<img src="https://unavatar.io/duckduckgo/${new URL(link.url).hostname}" draggable="false" onerror="this.style.display='none'" class="${imgSizeClass} rounded object-contain shrink-0" alt="icon" />`; } catch(e){}
 
                         linksHtml += `
-                        <div class="group relative flex items-center justify-between ${pClass} bg-slate-500/5 border border-slate-500/10 rounded-xl hover:bg-indigo-600/10 transition-all" style="overflow: visible !important;">
+                        <div class="group relative flex items-center justify-between ${pClass} bg-slate-500/5 border border-slate-500/10 rounded-xl hover:bg-indigo-600/10 transition-all"
+                             draggable="true"
+                             ondragstart="handleDragStart(event, 'link', '${sec.id}', ${idx})"
+                             ondragend="handleDragEnd(event)"
+                             ondragover="handleDragOver(event, 'link')"
+                             ondrop="handleDrop(event, 'link', '${sec.id}', ${idx})">
                             <div class="flex items-center w-full overflow-visible">
                                 <i class="fas fa-grip-vertical text-slate-500 opacity-0 group-hover:opacity-50 transition-opacity ${dragMrClass} cursor-move admin-only text-[10px] shrink-0"></i>
                                 <div class="link-tooltip-wrapper flex items-center ${spaceXClass} truncate w-full ${prClass}" style="overflow: visible !important;">
@@ -780,24 +845,44 @@
                             <button type="button" onclick="deleteCustomSection('${sec.id}')" class="admin-only text-[10px] px-2 py-1 bg-red-600/20 text-red-400 border border-red-500/20 rounded-md hover:bg-red-600/40 transition-colors cursor-pointer z-[50]"><i class="fas fa-trash"></i></button>
                         </div>
                     </div>
-                    <div class="grid ${gridCols}" style="min-height: 40px; overflow: visible !important;" ondragover="handleDragOver(event, 'section')" ondrop="handleDrop(event, 'section', '${sec.id}')">
+                    <div class="grid ${gridCols}" style="min-height: 40px; overflow: visible !important;" 
+                         ondragover="handleDragOver(event, 'section')" 
+                         ondrop="handleDrop(event, 'section', '${sec.id}')">
                         ${linksHtml}
                     </div>
                     ${expandHtml}
                 `;
                 grid.insertBefore(card, addBtnCard);
             });
+            
             checkAdminSession();
         }
 
+        // --- 删除链接（带确认对话框） ---
         function deleteSectionLink(e, secId, linkIdx) {
-            e.preventDefault(); e.stopPropagation();
+            e.preventDefault(); 
+            e.stopPropagation();
+            
+            // 获取链接名称用于确认对话框
+            let linkName = '';
             let secs = cloudConfig.dynamicSections || [];
             const sec = secs.find(s => s.id === secId);
-            if(sec) { sec.links.splice(linkIdx, 1); saveDynamicSections(secs); }
+            if (sec && sec.links[linkIdx]) {
+                linkName = sec.links[linkIdx].name || '这个链接';
+            }
+            
+            // 弹出确认对话框
+            if (!confirm(t('delConfirm') + '\n\n“' + linkName + '”')) {
+                return;
+            }
+            
+            if(sec) { 
+                sec.links.splice(linkIdx, 1); 
+                saveDynamicSections(secs); 
+            }
         }
 
-        // --- 搜索引擎配置（新增“电子书”项） ---
+        // --- 搜索引擎配置 ---
         const engines = { 
             google: { action: 'https://www.google.com/search', name: 'q', placeholderKey: 'searchGoogle', icon: 'fab fa-google text-blue-400' },
             baidu: { action: 'https://www.baidu.com/s', name: 'wd', placeholderKey: 'searchBaidu', icon: 'fas fa-paw text-red-400' },
@@ -805,7 +890,6 @@
                           buildUrl: (query) => `https://translate.google.com/?hl=zh-cn&sl=auto&tl=zh-CN&text=${encodeURIComponent(query)}` },
             yiso: { action: 'https://yiso.fun/info', name: 'searchKey', placeholderKey: 'searchYiso', icon: 'fas fa-search text-cyan-400' },
             youtube: { action: 'https://www.youtube.com/results', name: 'search_query', placeholderKey: 'searchYoutube', icon: 'fab fa-youtube text-red-500' },
-            // 新增 Z-Library 电子书搜索引擎
             zlib: { action: 'https://z-library.sk/s/', name: 'q', placeholderKey: 'searchZlib', icon: 'fas fa-book text-amber-400' },
             wiki: { action: 'https://zh.wikipedia.org/w/index.php', name: 'search', placeholderKey: 'searchWiki', icon: 'fas fa-wikipedia-w text-slate-300' },
             github: { action: 'https://github.com/search', name: 'q', placeholderKey: 'searchGithub', icon: 'fab fa-github text-slate-400' }
@@ -872,93 +956,15 @@
                 const secId = currentModalTarget.replace('section_', ''); 
                 let secs = cloudConfig.dynamicSections || []; 
                 const sec = secs.find(s => s.id === secId);
-                if(sec) { sec.links.push(newLink); saveDynamicSections(secs); }
-            } else if(currentModalTarget === 'friend') {
-                // friend 已移除
-            } else {
-                try { 
-                    const res = await fetch('/api/links'); 
-                    let links = res.ok ? await res.json() : JSON.parse(localStorage.getItem('nav_custom_links') || '[]'); 
-                    links.push(newLink); 
-                    await fetch('/api/links', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(links) }); 
-                    localStorage.setItem('nav_custom_links', JSON.stringify(links)); 
-                    loadCustomLinks(); 
-                } 
-                catch (error) { 
-                    const links = JSON.parse(localStorage.getItem('nav_custom_links') || '[]'); 
-                    links.push(newLink); 
-                    localStorage.setItem('nav_custom_links', JSON.stringify(links)); 
-                    loadCustomLinks(); 
+                if(sec) { 
+                    sec.links.push(newLink); 
+                    saveDynamicSections(secs); 
+                } else {
+                    alert(currentLang === 'zh' ? '未找到目标区域，请刷新后重试' : 'Target section not found, please refresh and try again');
                 }
             } 
             toggleModal(false);
         }
-
-        async function loadCustomLinks() {
-            const container = document.getElementById('custom-links-container'); const actionWrapper = document.getElementById('expand-action-wrapper');
-            container.innerHTML = `<div class="col-span-full text-center text-xs text-slate-400/60 py-10"><i class="fas fa-spinner fa-spin"></i> ${t('loadingCloud')}</div>`;
-            let links = []; try { const res = await fetch('/api/links'); if(res.ok) links = await res.json(); else throw new Error(); } catch(e) { links = JSON.parse(localStorage.getItem('nav_custom_links') || '[]'); }
-            
-            links = links.map(link => {
-                if (!link.desc && link.url) {
-                    link.desc = extractDomainFromUrl(link.url);
-                }
-                return link;
-            });
-            localStorage.setItem('nav_custom_links', JSON.stringify(links));
-            fetch('/api/links', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(links) }).catch(() => {});
-            
-            container.innerHTML = '';
-            
-            if(links.length === 0) { 
-                container.innerHTML = `<div class="col-span-full text-center text-xs text-slate-400/60 py-10">${t('noCloudLinks')}</div>`; 
-                actionWrapper.classList.add('hidden'); 
-                container.className = 'grid grid-cols-2 gap-3';
-                return; 
-            }
-
-            const isCompact = links.length > 6;
-            container.className = isCompact ? 'grid grid-cols-3 gap-2' : 'grid grid-cols-2 gap-3';
-
-            let visibleLinks = links;
-            let showExpandBtn = false;
-            if (links.length > 9) { showExpandBtn = true; if (!isCustomLinksExpanded) visibleLinks = links.slice(0, 9); }
-
-            const pClass = isCompact ? 'p-2' : 'p-3'; const spaceXClass = isCompact ? 'space-x-1.5' : 'space-x-2.5';
-            const iconSizeClass = isCompact ? 'w-4 h-4 text-[9px]' : 'w-5 h-5 text-[10px]'; const imgSizeClass = isCompact ? 'w-4 h-4' : 'w-5 h-5';
-            const textSizeClass = isCompact ? 'text-[11px]' : 'text-sm'; const prClass = isCompact ? 'pr-4' : 'pr-5'; const btnClass = isCompact ? 'right-1 text-[10px] px-1 py-0.5' : 'right-2 text-xs p-1';
-
-            visibleLinks.forEach((item, index) => {
-                const displayName = getLocalizedLinkName(item.name, item.url);
-                const description = item.desc || '';
-                let displayIcon = `<div class="${iconSizeClass} rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold shrink-0">${displayName.charAt(0).toUpperCase()}</div>`;
-                try { if(item.url) displayIcon = `<img src="https://unavatar.io/duckduckgo/${new URL(item.url).hostname}" draggable="false" onerror="this.style.display='none'" class="${imgSizeClass} rounded object-contain shrink-0" alt="icon" />`; } catch(err){}
-                
-                container.innerHTML += `
-                    <div class="group relative flex items-center justify-between ${pClass} bg-slate-500/5 border border-slate-500/10 rounded-xl hover:bg-indigo-600/10 transition-all" style="overflow: visible !important;">
-                        <div class="flex items-center w-full overflow-visible">
-                            <div class="link-tooltip-wrapper flex items-center ${spaceXClass} truncate w-full ${prClass}" style="overflow: visible !important;">
-                                <a href="${item.url}" draggable="false" target="_blank" rel="noopener noreferrer" class="flex items-center ${spaceXClass} truncate">
-                                    ${displayIcon} <span class="${textSizeClass} font-medium truncate">${displayName}</span>
-                                </a>
-                                ${description ? `<span class="tooltip-text">${description}</span>` : ''}
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-1 shrink-0">
-                            <button type="button" onclick="openEditDescModal('custom', null, ${index})" class="admin-only edit-desc-btn text-[10px] text-slate-400 hover:text-indigo-400 transition-opacity" title="编辑备注"><i class="fas fa-pen"></i></button>
-                            <button type="button" onclick="deleteCustomLink(event, ${index})" class="admin-only ${btnClass} text-slate-400 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-500/20 rounded cursor-pointer shrink-0"><i class="fas fa-trash-alt"></i></button>
-                        </div>
-                    </div>`;
-            });
-
-            if (showExpandBtn) { 
-                actionWrapper.classList.remove('hidden'); const btn = document.getElementById('expand-btn'); 
-                btn.innerHTML = isCustomLinksExpanded ? `<span data-i18n="collapseMore">${t('collapseMore')}</span> <i class="fas fa-chevron-up text-[10px]"></i>` : `<span data-i18n="expandMore">${t('expandMore')}</span> (${links.length - 9}) <i class="fas fa-chevron-down text-[10px]"></i>`; 
-            } else { actionWrapper.classList.add('hidden'); }
-        }
-
-        function toggleExpandCustomLinks() { isCustomLinksExpanded = !isCustomLinksExpanded; loadCustomLinks(); }
-        async function deleteCustomLink(e, index) { e.preventDefault(); e.stopPropagation(); if(!confirm(t('delConfirm'))) return; try { const res = await fetch('/api/links'); let links = res.ok ? await res.json() : JSON.parse(localStorage.getItem('nav_custom_links') || '[]'); links.splice(index, 1); await fetch('/api/links', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(links) }); localStorage.setItem('nav_custom_links', JSON.stringify(links)); if(links.length <= 9) isCustomLinksExpanded = false; loadCustomLinks(); } catch(error) { const links = JSON.parse(localStorage.getItem('nav_custom_links') || '[]'); links.splice(index, 1); localStorage.setItem('nav_custom_links', JSON.stringify(links)); if(links.length <= 9) isCustomLinksExpanded = false; loadCustomLinks(); } }
 
         // --- 初始化 ---
         document.addEventListener('click', function(e) {
@@ -969,7 +975,11 @@
             }
             document.getElementById('theme-panel').classList.add('hidden');
         });
-        checkAdminSession(); document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en'; applyLanguage(); initCloudData();
+        
+        checkAdminSession(); 
+        document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en'; 
+        applyLanguage(); 
+        initCloudData();
     </script>
 </body>
 </html>
